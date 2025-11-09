@@ -733,6 +733,182 @@ async def run_compliance_check(claim_id: str):
     return result.data
 
 
+# ==================== Demo & Orchestration Endpoints ====================
+
+@app.post("/api/claims/{claim_id}/run-all-agents")
+async def run_all_agents(claim_id: str):
+    """
+    🎯 DEMO ENDPOINT: Run all 5 agents on a claim sequentially
+
+    This is the "WOW" endpoint for HackPrinceton demo:
+    1. FinTrack: Estimates damage & payout
+    2. ShopFinder: Finds repair shops
+    3. Claim Drafting: Generates formal document
+    4. Compliance: Validates for submission
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Complete agent outputs + timeline
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Initialize results
+        results = {
+            "claim_id": claim_id,
+            "agents_run": 0,
+            "total_agents": 4,
+            "timeline": [],
+            "outputs": {}
+        }
+
+        import time
+        start_time = time.time()
+
+        # 1. FinTrack Agent - Damage Estimation
+        print(f"🔷 Running FinTrack Agent for {claim_id}...")
+        fintrack_result = fintrack_agent.estimate_damage(claim)
+        if fintrack_result.success:
+            results["outputs"]["fintrack"] = fintrack_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "FinTrack",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 2. ShopFinder Agent - Shop Recommendations
+        print(f"🔷 Running ShopFinder Agent for {claim_id}...")
+        shop_result = shopfinder_agent.find_shops(claim, max_results=3)
+        if shop_result.success:
+            results["outputs"]["shopfinder"] = shop_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "ShopFinder",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 3. Claim Drafting Agent - Generate Document
+        print(f"🔷 Running Claim Drafting Agent for {claim_id}...")
+        draft_result = claim_drafting_agent.generate_draft(
+            claim,
+            financial_data=fintrack_result.data if fintrack_result.success else None
+        )
+        if draft_result.success:
+            results["outputs"]["claim_drafting"] = draft_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "Claim Drafting",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 4. Compliance Agent - Final Validation
+        print(f"🔷 Running Compliance Agent for {claim_id}...")
+        compliance_result = compliance_agent.validate_claim(
+            claim,
+            draft_html=draft_result.data.get("html_draft") if draft_result.success else None
+        )
+        if compliance_result.success:
+            results["outputs"]["compliance"] = compliance_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "Compliance",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # Calculate total processing time
+        total_time = time.time() - start_time
+        results["total_processing_time"] = f"{total_time:.2f}s"
+        results["success"] = results["agents_run"] == results["total_agents"]
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "FinTrack", "Complete")
+        orchestrator.update_agent_status(claim_id, "ShopFinder", "Complete")
+        orchestrator.update_agent_status(claim_id, "ClaimDrafting", "Complete")
+        orchestrator.update_agent_status(claim_id, "ComplianceCheck", "Complete")
+
+        # Generate summary
+        if results["success"]:
+            results["summary"] = (
+                f"✅ Successfully processed claim {claim_id} through all 4 agents in {total_time:.2f}s. "
+                f"Estimated payout: ${results['outputs']['fintrack']['estimate']['payout_after_deductible']:,.2f}. "
+                f"Found {len(results['outputs']['shopfinder']['recommendations']['recommended_shops'])} repair shops. "
+                f"Claim draft generated and compliance {'✅ PASSED' if results['outputs']['compliance']['submission_ready'] else '⚠️  NEEDS REVIEW'}."
+            )
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error running all agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error running agents: {str(e)}")
+
+
+@app.post("/api/demo/create-sample-claim")
+async def create_demo_claim():
+    """
+    🎯 DEMO ENDPOINT: Create a realistic sample claim for testing
+
+    Returns:
+        Sample claim with all fields populated
+    """
+    try:
+        import uuid
+        from utils.data_models import Claim, Party, ClaimStatus
+
+        # Create realistic sample claim
+        claim_id = f"C-DEMO-{uuid.uuid4().hex[:8].upper()}"
+
+        sample_claim = Claim(
+            claim_id=claim_id,
+            incident_type="Car Accident",
+            date="2025-01-08",
+            location="123 Nassau St, Princeton, NJ 08542",
+            parties_involved=[
+                Party(
+                    name="John Smith",
+                    role="driver",
+                    contact="(609) 555-1234",
+                    insurance_info="Policy #ABC123456"
+                ),
+                Party(
+                    name="Jane Doe",
+                    role="other driver",
+                    contact="(609) 555-5678",
+                    insurance_info="State Farm Policy #XYZ789"
+                )
+            ],
+            damages_description="Rear-end collision at traffic light on Nassau Street. Significant damage to rear bumper, trunk, and tail lights. Driver-side rear quarter panel also impacted. No airbag deployment. All passengers uninjured.",
+            estimated_damage="$4,500",
+            status=ClaimStatus.OPEN,
+            summary="Rear-end collision at Princeton traffic light with moderate vehicle damage",
+            confidence=0.92,
+            raw_text="On January 8th, 2025, at approximately 3:45 PM, I was stopped at a red light on Nassau Street when the vehicle behind me failed to stop and struck my vehicle from behind..."
+        )
+
+        # Store in database
+        claimpilot_agent.claims_database[claim_id] = sample_claim
+
+        return {
+            "success": True,
+            "claim_id": claim_id,
+            "claim": sample_claim.model_dump(),
+            "message": f"Demo claim {claim_id} created successfully! Use /api/claims/{claim_id}/run-all-agents to see all agents in action."
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating demo claim: {str(e)}")
+
+
 # ==================== System Endpoints ====================
 
 @app.get("/api/stats")
