@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ChatPanel } from '@/components/claims/chat-panel'
 import { OrchestratorPanel } from '@/components/claims/orchestrator-panel'
+import { ClaimProgressFlow } from '@/components/claims/claim-progress-flow'
+import { FileExtractionDisplay } from '@/components/claims/file-extraction-display'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,6 +22,13 @@ export default function ClaimDetailsPage() {
 
   const [claim, setClaim] = useState<Claim | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [estimatedPayout, setEstimatedPayout] = useState<number | undefined>(undefined)
+  const [nextActions, setNextActions] = useState<string[]>([
+    'Run FinTrack agent to estimate damage costs',
+    'Get repair shop recommendations',
+    'Generate formal claim document'
+  ])
 
   useEffect(() => {
     if (claimId) {
@@ -182,7 +191,7 @@ export default function ClaimDetailsPage() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex">
         {/* Claim Info Sidebar */}
-        <div className="w-80 border-r border-gray-200 bg-white overflow-y-auto">
+        <div className="w-96 border-r border-gray-200 bg-white overflow-y-auto">
           <div className="p-6 space-y-6">
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
@@ -309,6 +318,43 @@ export default function ClaimDetailsPage() {
                 </Card>
               </div>
             )}
+
+            {/* Claim Progress Flow */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                Processing Status
+              </h3>
+              <ClaimProgressFlow
+                currentStep={currentStep}
+                estimatedPayout={estimatedPayout}
+                nextActions={nextActions}
+              />
+            </div>
+
+            {/* File Extraction Display */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                Documents & AI Extraction
+              </h3>
+              <FileExtractionDisplay
+                files={[
+                  {
+                    name: 'accident-report.pdf',
+                    size: 245760,
+                    uploadedAt: 'Today at 2:45 PM'
+                  }
+                ]}
+                extractedData={[
+                  { field: 'Incident Date', value: claim.incident_data.date, confidence: 95 },
+                  { field: 'Location', value: claim.incident_data.location, confidence: 92 },
+                  { field: 'Vehicle Make', value: claim.vehicle_data.make, confidence: 98 },
+                  { field: 'Vehicle Model', value: claim.vehicle_data.model, confidence: 98 },
+                  { field: 'License Plate', value: claim.vehicle_data.license_plate, confidence: 89 },
+                  { field: 'Damage Severity', value: claim.damage_data.severity, confidence: 85 }
+                ]}
+                processingStatus="complete"
+              />
+            </div>
           </div>
         </div>
 
