@@ -11,6 +11,9 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
+from typing import Optional
+import base64
+from datetime import datetime
 
 from orchestrator.coordinator import orchestrator
 from agents.claimpilot_agent import claimpilot_agent
@@ -34,6 +37,10 @@ if GEMINI_API_KEY:
     gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
 else:
     print("Warning: GEMINI_API_KEY not set. Chat functionality will be limited.")
+from utils.data_models import (
+    UserMessage, ChatResponse, Claim, ClaimStatus
+)
+from routes.mcp_routes import router as mcp_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -46,10 +53,19 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify exact origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include MCP routes
+app.include_router(mcp_router)
 
 
 # ==================== Main Endpoints ====================
@@ -226,6 +242,21 @@ When the user asks you to:
 
     except Exception as e:
         print(f"Chat error: {str(e)}")
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(user_message: UserMessage):
+    """
+    Main chat endpoint - processes user messages and coordinates agents
+
+    Args:
+        user_message: UserMessage with text, optional file data, and context
+
+    Returns:
+        ChatResponse with agent results
+    """
+    try:
+        response = orchestrator.process_message(user_message)
+        return response
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -688,6 +719,8 @@ async def get_agent_status(claim_id: str):
 async def process_full_claim(
     files: Optional[List[UploadFile]] = File(None),
     claim_data: Optional[str] = Form(None)
+    file: UploadFile = File(...),
+    message: Optional[str] = Form(None)
 ):
     """
     Process a full claim workflow with all agents
@@ -695,6 +728,8 @@ async def process_full_claim(
     Args:
         files: List of uploaded documents (optional)
         claim_data: JSON string of claim data (optional)
+        file: Uploaded document
+        message: Optional message
 
     Returns:
         Complete claim processing results
@@ -766,6 +801,21 @@ async def process_full_claim(
 
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON in claim_data: {str(e)}")
+        # Read file content
+        content = await file.read()
+        encoded_content = base64.b64encode(content).decode('utf-8')
+
+        # Create user message
+        user_message = UserMessage(
+            message=message or "Process full claim workflow",
+            file_data=encoded_content,
+            file_name=file.filename
+        )
+
+        # Process with full workflow
+        response = orchestrator.process_full_claim(user_message)
+        return response
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing claim: {str(e)}")
 
