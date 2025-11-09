@@ -18,6 +18,8 @@ from agents.fintrack_agent import fintrack_agent
 from agents.shopfinder_agent import shopfinder_agent
 from agents.claim_drafting_agent import claim_drafting_agent
 from agents.compliance_agent import compliance_agent
+from agents.legal_advisor_agent import legal_advisor_agent
+from agents.medical_advisor_agent import medical_advisor_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, ClaimStatus
 )
@@ -988,6 +990,128 @@ async def create_demo_claim():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating demo claim: {str(e)}")
+
+
+# ==================== Legal & Medical Advisor Endpoints ====================
+
+@app.post("/api/claims/{claim_id}/legal-guidance")
+async def get_legal_guidance(claim_id: str, user_state: str = "NJ"):
+    """
+    Get legal guidance for a claim
+
+    Args:
+        claim_id: Claim identifier
+        user_state: User's state (default NJ)
+
+    Returns:
+        Legal guidance and next steps
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Get legal guidance
+        result = legal_advisor_agent.get_legal_guidance(claim, user_state)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "LegalAdvisor", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting legal guidance: {str(e)}")
+
+
+@app.post("/api/verify-lawyer")
+async def verify_lawyer(lawyer_name: str, state: str = "NJ"):
+    """
+    Verify lawyer credentials
+
+    Args:
+        lawyer_name: Name of lawyer to verify
+        state: State bar to check
+
+    Returns:
+        Verification results
+    """
+    try:
+        result = legal_advisor_agent.verify_lawyer(lawyer_name, state)
+        return result.data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error verifying lawyer: {str(e)}")
+
+
+@app.post("/api/claims/{claim_id}/medical-assessment")
+async def get_medical_assessment(
+    claim_id: str,
+    symptoms: Optional[List[str]] = None
+):
+    """
+    Get medical assessment and recommendations
+
+    Args:
+        claim_id: Claim identifier
+        symptoms: Optional list of symptoms
+
+    Returns:
+        Medical assessment and facility recommendations
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Get medical assessment
+        result = medical_advisor_agent.assess_injuries(claim, symptoms)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "MedicalAdvisor", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting medical assessment: {str(e)}")
+
+
+@app.get("/api/medical-facilities")
+async def find_medical_facilities(
+    facility_type: str = "urgent_care",
+    max_results: int = 3
+):
+    """
+    Find nearby medical facilities
+
+    Args:
+        facility_type: Type of facility (urgent_care, hospital, physical_therapy)
+        max_results: Maximum number to return
+
+    Returns:
+        List of medical facilities
+    """
+    try:
+        result = medical_advisor_agent.find_facilities(facility_type, max_results)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        return result.data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error finding facilities: {str(e)}")
 
 
 # ==================== System Endpoints ====================
