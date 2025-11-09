@@ -227,7 +227,7 @@ export default function Dashboard() {
         onClose={() => setShowStartModal(false)}
         onSelectChatbot={() => {
           setShowStartModal(false)
-          router.push('/')  // Go to homepage with chatbot
+          router.push('/emergency-chat')  // Go to emergency chatbot
         }}
         onSelectForm={() => {
           setShowStartModal(false)
