@@ -16,7 +16,11 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 # Initialize Supabase client
 supabase: Optional[Client] = None
 
-if SUPABASE_URL and SUPABASE_KEY:
+# Temporarily disable Supabase due to access denied errors
+# Set to True to re-enable when Supabase access is fixed
+SUPABASE_ENABLED = False
+
+if SUPABASE_ENABLED and SUPABASE_URL and SUPABASE_KEY:
     try:
         # Create client with service_role key (bypasses RLS)
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
