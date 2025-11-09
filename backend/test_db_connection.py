@@ -53,7 +53,7 @@ def test_connection():
             print("TO FIX - CREATE DATABASE TABLES:")
             print("="*50)
             print("\n1. Open your Supabase dashboard:")
-            print("   https://arffctqxrifxotlwliwz.supabase.co/project/arffctqxrifxotlwliwz/sql/new")
+            print("   https://supabase.com/dashboard → Your Project → SQL Editor")
             print("\n2. Click on 'SQL Editor' in the left sidebar")
             print("\n3. Create a new query")
             print("\n4. Copy ALL contents from this file:")

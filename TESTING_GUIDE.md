@@ -30,7 +30,7 @@ The Gemini chatbot is available on **every claim detail page** under the "Chat" 
 **⚠️ REQUIRED - Do this first!**
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project: `arffctqxrifxotlwliwz`
+2. Select your project
 3. Click **SQL Editor** → **New Query**
 4. Copy contents from `/home/user/hackprinceton25/database-schema.sql`
 5. Paste and click **Run**

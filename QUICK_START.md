@@ -107,7 +107,7 @@ I've successfully set up the foundation for your ClaimPilot enhancements:
 
 **Run this SQL in Supabase:**
 
-1. Go to: https://arffctqxrifxotlwliwz.supabase.co/project/arffctqxrifxotlwliwz/sql/new
+1. Go to: Supabase Dashboard → Your Project → SQL Editor
 2. Open `backend/setup_database.sql`
 3. Copy and paste the entire file
 4. Click "Run" (this adds the `chat_messages` table)

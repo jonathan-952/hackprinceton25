@@ -18,8 +18,8 @@ I've successfully integrated Supabase database into your ClaimPilot system:
 The database connection is working, but the tables don't exist yet. Follow these steps:
 
 1. **Open Supabase SQL Editor:**
-   - Go to: https://arffctqxrifxotlwliwz.supabase.co/project/arffctqxrifxotlwliwz/sql/new
-   - Or navigate: Supabase Dashboard → SQL Editor (left sidebar)
+   - Go to: Your Supabase Dashboard → SQL Editor (left sidebar)
+   - Or navigate: https://supabase.com/dashboard/project/YOUR_PROJECT_ID/sql/new
 
 2. **Run the Setup SQL:**
    - Open the file: `backend/setup_database.sql`
@@ -81,10 +81,10 @@ Open your browser to:
 Your `.env` file has been updated with correct format:
 
 ```
-GEMINI_API_KEY=AIzaSyBNIPuJGTOVNqF-VeJfWjAC3JErSYoFlqg
-NEXT_PUBLIC_SUPABASE_URL=https://arffctqxrifxotlwliwz.supabase.co
-SUPABASE_API_KEY=<your-service-role-key>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+GEMINI_API_KEY=your-gemini-api-key-here
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+SUPABASE_API_KEY=your-service-role-key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## 🔄 How It Works Now
