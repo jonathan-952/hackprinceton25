@@ -152,45 +152,48 @@ export default function ClaimDetailsPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      {/* Header - Apple Style */}
-      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl shadow-sm">
+    <div className="flex h-screen flex-col bg-white">
+      {/* Minimal Professional Header */}
+      <header className="border-b border-gray-200 bg-white">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/dashboard">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
                 </Button>
               </Link>
+              <div className="h-6 w-px bg-gray-200"></div>
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {claim.incident_data.type}
-                  </h1>
-                  <Badge variant={getStatusColor(claim.status) as any}>
-                    {claim.status}
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">Claim #{claim.claim_id}</p>
+                <h1 className="text-base font-semibold text-gray-900">
+                  {claim.incident_data.type}
+                </h1>
+                <p className="text-xs text-gray-500">Claim #{claim.claim_id}</p>
               </div>
+              <Badge
+                variant={getStatusColor(claim.status) as any}
+                className="text-xs"
+              >
+                {claim.status}
+              </Badge>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-300 hover:bg-gray-50 text-gray-700"
+                className="text-gray-700 border-gray-300 hover:bg-gray-50"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                Download Report
+                Export
               </Button>
               <Button
                 size="sm"
-                className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+                className="bg-gray-900 hover:bg-gray-800 text-white"
               >
                 Submit Claim
               </Button>
@@ -199,142 +202,141 @@ export default function ClaimDetailsPage() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - 2 Column Layout */}
       <div className="flex-1 overflow-hidden flex">
-        {/* Claim Info Sidebar */}
-        <div className="w-96 border-r border-gray-200 bg-white overflow-y-auto">
-          <div className="p-6 space-y-6">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                Claim Information
-              </h3>
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Incident Date</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {formatDate(claim.incident_data.date)}
-                      </p>
-                      <p className="text-xs text-gray-600">{claim.incident_data.time}</p>
-                    </div>
+        {/* Left: Main Claim Details */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
+            {/* Key Info Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                    <Calendar className="h-5 w-5 text-gray-600" />
                   </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Incident Date</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatDate(claim.incident_data.date)}
+                    </p>
+                    <p className="text-xs text-gray-600">{claim.incident_data.time}</p>
+                  </div>
+                </div>
+              </div>
 
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Location</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {claim.incident_data.location}
-                      </p>
-                    </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                    <MapPin className="h-5 w-5 text-gray-600" />
                   </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Location</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {claim.incident_data.location}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                  <div className="flex items-start gap-3">
-                    <Car className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Vehicle</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {claim.vehicle_data.year} {claim.vehicle_data.make}{' '}
-                        {claim.vehicle_data.model}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        Plate: {claim.vehicle_data.license_plate}
-                      </p>
-                    </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                    <Car className="h-5 w-5 text-gray-600" />
                   </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Vehicle</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {claim.vehicle_data.year} {claim.vehicle_data.make} {claim.vehicle_data.model}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {claim.vehicle_data.license_plate}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                  <div className="flex items-start gap-3">
-                    <Shield className="h-5 w-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Insurance</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {claim.insurance_data.provider}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        Policy: {claim.insurance_data.policy_number}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        Deductible: {formatCurrency(claim.insurance_data.deductible)}
-                      </p>
-                    </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
+                    <Shield className="h-5 w-5 text-gray-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <p className="text-xs text-gray-500">Insurance</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {claim.insurance_data.provider}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      ${claim.insurance_data.deductible} deductible
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+            {/* Incident Description */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">
                 Incident Description
-              </h3>
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    {claim.incident_data.description}
-                  </p>
-                </CardContent>
-              </Card>
+              </h2>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {claim.incident_data.description}
+              </p>
             </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                Damage Details
-              </h3>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-gray-500">Severity</span>
-                    <Badge
-                      variant={
-                        claim.damage_data.severity === 'severe'
-                          ? 'destructive'
-                          : claim.damage_data.severity === 'moderate'
-                          ? 'warning'
-                          : 'secondary'
-                      }
-                    >
-                      {claim.damage_data.severity}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-700 leading-relaxed mt-2">
-                    {claim.damage_data.description}
-                  </p>
-                </CardContent>
-              </Card>
+            {/* Damage Details */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  Damage Assessment
+                </h2>
+                <Badge
+                  variant={
+                    claim.damage_data.severity === 'severe'
+                      ? 'destructive'
+                      : claim.damage_data.severity === 'moderate'
+                      ? 'warning'
+                      : 'secondary'
+                  }
+                  className="text-xs"
+                >
+                  {claim.damage_data.severity}
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {claim.damage_data.description}
+              </p>
             </div>
 
+            {/* Police Report */}
             {claim.police_report?.filed && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">
                   Police Report
-                </h3>
-                <Card>
-                  <CardContent className="p-4 space-y-2">
+                </h2>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Report Number</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {claim.police_report.report_number}
+                    </p>
+                  </div>
+                  {claim.police_report.officer_name && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500">Report Number</p>
+                      <p className="text-xs text-gray-500">Officer</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {claim.police_report.report_number}
+                        {claim.police_report.officer_name}
                       </p>
                     </div>
-                    {claim.police_report.officer_name && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500">Officer</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {claim.police_report.officer_name}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Claim Progress Flow */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+            {/* Processing Status */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">
                 Processing Status
-              </h3>
+              </h2>
               <ClaimProgressFlow
                 currentStep={currentStep}
                 estimatedPayout={estimatedPayout}
@@ -342,11 +344,11 @@ export default function ClaimDetailsPage() {
               />
             </div>
 
-            {/* File Extraction Display */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                Documents & AI Extraction
-              </h3>
+            {/* Documents */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">
+                Documents & AI Analysis
+              </h2>
               <FileExtractionDisplay
                 files={[
                   {
@@ -369,16 +371,16 @@ export default function ClaimDetailsPage() {
           </div>
         </div>
 
-        {/* Main Panel - Chat & Orchestrator Tabs */}
-        <div className="flex-1 overflow-hidden">
+        {/* Right: Resizable AI Assistant Panel */}
+        <div className="w-96 border-l border-gray-200 bg-white flex flex-col">
           <Tabs defaultValue="chat" className="h-full flex flex-col">
-            <div className="border-b border-gray-200 bg-white px-6">
-              <TabsList className="h-12">
-                <TabsTrigger value="chat" className="px-6">
-                  Chat Assistant
+            <div className="border-b border-gray-200 bg-white px-4 py-3">
+              <TabsList className="grid w-full grid-cols-2 h-9">
+                <TabsTrigger value="chat" className="text-xs">
+                  AI Chat
                 </TabsTrigger>
-                <TabsTrigger value="orchestrator" className="px-6">
-                  Agent Orchestrator
+                <TabsTrigger value="orchestrator" className="text-xs">
+                  Agents
                 </TabsTrigger>
               </TabsList>
             </div>
