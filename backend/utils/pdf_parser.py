@@ -42,7 +42,7 @@ class PDFParser:
 
     def _parse_pdf(self, pdf_data: bytes) -> str:
         """
-        Parse PDF file content
+        Parse PDF file content using MCP tools
 
         Args:
             pdf_data: Raw PDF bytes
@@ -51,28 +51,33 @@ class PDFParser:
             Extracted text
         """
         try:
-            # Try using PyPDF2
-            import PyPDF2
-            pdf_file = io.BytesIO(pdf_data)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-
-            return text.strip()
-        except ImportError:
-            # Fallback: try pdfplumber
+            # Use MCP parse_pdf tool
+            from utils.mcp_tools import parse_pdf_from_bytes
+            return parse_pdf_from_bytes(pdf_data)
+        except Exception as e:
+            # Fallback to PyPDF2/pdfplumber if MCP tools fail
             try:
-                import pdfplumber
+                import PyPDF2
                 pdf_file = io.BytesIO(pdf_data)
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+
                 text = ""
-                with pdfplumber.open(pdf_file) as pdf:
-                    for page in pdf.pages:
-                        text += page.extract_text() + "\n"
+                for page in pdf_reader.pages:
+                    text += page.extract_text() + "\n"
+
                 return text.strip()
             except ImportError:
-                raise Exception("No PDF parsing library available. Install PyPDF2 or pdfplumber.")
+                # Final fallback: try pdfplumber
+                try:
+                    import pdfplumber
+                    pdf_file = io.BytesIO(pdf_data)
+                    text = ""
+                    with pdfplumber.open(pdf_file) as pdf:
+                        for page in pdf.pages:
+                            text += page.extract_text() + "\n"
+                    return text.strip()
+                except ImportError:
+                    raise Exception("No PDF parsing library available. Install PyPDF2 or pdfplumber.")
 
     def extract_structured_data(self, text: str) -> Dict:
         """

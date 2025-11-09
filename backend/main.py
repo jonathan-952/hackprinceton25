@@ -18,6 +18,7 @@ from agents.compliance_agent import compliance_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, ClaimStatus
 )
+from routes.mcp_routes import router as mcp_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -26,14 +27,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include MCP routes
+app.include_router(mcp_router)
 
 
 # ==================== Main Endpoints ====================

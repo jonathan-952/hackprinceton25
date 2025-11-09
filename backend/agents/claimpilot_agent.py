@@ -178,7 +178,7 @@ class ClaimPilotAgent:
 
     def _generate_summary(self, claim: Claim) -> str:
         """
-        Generate natural language summary of the claim
+        Generate natural language summary of the claim using MCP AI summarization
 
         Args:
             claim: Claim object
@@ -186,7 +186,45 @@ class ClaimPilotAgent:
         Returns:
             Natural language summary
         """
-        # Create a conversational summary
+        try:
+            # Use MCP summarize_claim tool with the raw text
+            from utils.mcp_tools import summarize_claim
+
+            # If we have raw_text, use AI summarization
+            if claim.raw_text and len(claim.raw_text.strip()) > 50:
+                ai_summary = summarize_claim(claim.raw_text)
+
+                # Append claim ID and status info
+                summary = (
+                    f"{ai_summary}\n\n"
+                    f"This claim has been assigned ID {claim.claim_id} "
+                    f"and is currently in {claim.status.value} status."
+                )
+            else:
+                # Fallback to template-based summary if raw text is unavailable
+                summary = self._generate_template_summary(claim)
+
+            # Update claim with summary
+            claim.summary = summary
+            return summary
+
+        except Exception as e:
+            print(f"Error using MCP summarize_claim, falling back to template: {str(e)}")
+            # Fallback to template-based summary
+            summary = self._generate_template_summary(claim)
+            claim.summary = summary
+            return summary
+
+    def _generate_template_summary(self, claim: Claim) -> str:
+        """
+        Generate template-based summary as fallback
+
+        Args:
+            claim: Claim object
+
+        Returns:
+            Template-based summary
+        """
         summary_parts = []
 
         summary_parts.append(
@@ -217,12 +255,7 @@ class ClaimPilotAgent:
             f"and is currently in {claim.status.value} status."
         )
 
-        summary = " ".join(summary_parts)
-
-        # Update claim with summary
-        claim.summary = summary
-
-        return summary
+        return " ".join(summary_parts)
 
     def _save_claim_to_db(self, claim: Claim) -> None:
         """

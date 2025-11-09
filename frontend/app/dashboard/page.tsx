@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [showUpload, setShowUpload] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [mcpSummary, setMcpSummary] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     fetchClaims();
@@ -29,7 +31,7 @@ export default function Dashboard() {
 
   const fetchClaims = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/claims');
+      const response = await fetch('http://localhost:9000/api/claims');
       const data = await response.json();
       setClaims(data.claims || []);
     } catch (error) {
@@ -46,26 +48,29 @@ export default function Dashboard() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('message', 'Process full claim workflow');
 
-      const response = await fetch('http://localhost:8000/api/process-full-claim', {
+      // Call MCP endpoint to process document with emailagent tools
+      const response = await fetch('http://localhost:9000/api/mcp-process-document', {
         method: 'POST',
         body: formData
       });
 
       const data = await response.json();
 
-      if (data.claim) {
-        // Redirect to claim details page
-        router.push(`/claim/${data.claim.claim_id}`);
+      if (data.success) {
+        // Display the MCP summary
+        setMcpSummary(data.summary);
+        setShowSummary(true);
+        setShowUpload(false);
+        setFile(null);
+      } else {
+        alert('Error processing document. Please try again.');
       }
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Error processing claim. Please try again.');
     } finally {
       setUploading(false);
-      setShowUpload(false);
-      setFile(null);
     }
   };
 
@@ -173,6 +178,52 @@ export default function Dashboard() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? 'Processing...' : 'Start Processing'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MCP Summary Modal */}
+        {showSummary && mcpSummary && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Claim Summary</h2>
+                <button
+                  onClick={() => {
+                    setShowSummary(false);
+                    setMcpSummary(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="bg-blue-50 rounded-xl p-6 mb-6">
+                <div className="flex items-start gap-3">
+                  <svg className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">AI-Generated Summary</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap">{mcpSummary}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowSummary(false);
+                    setMcpSummary(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Done
                 </button>
               </div>
             </div>
