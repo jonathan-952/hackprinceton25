@@ -54,6 +54,7 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [demoIndex, setDemoIndex] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -72,7 +73,16 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
   }
 
   const loadDemoConversation = () => {
-    setMessages(DEMO_CONVERSATION)
+    // Progressive demo - show one more message each time button is clicked
+    if (demoIndex < DEMO_CONVERSATION.length) {
+      const nextMessages = DEMO_CONVERSATION.slice(0, demoIndex + 1)
+      setMessages(nextMessages)
+      setDemoIndex(demoIndex + 1)
+    } else {
+      // Reset demo if at the end
+      setMessages([DEMO_CONVERSATION[0]])
+      setDemoIndex(1)
+    }
   }
 
   const loadChatHistory = async () => {
@@ -200,7 +210,7 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
             size="sm"
             className="bg-white text-purple-700 border-purple-300 hover:bg-purple-50 hover:text-purple-800 text-xs"
           >
-            ✨ Demo
+            ✨ Demo {demoIndex > 0 && demoIndex <= DEMO_CONVERSATION.length ? `(${demoIndex}/${DEMO_CONVERSATION.length})` : ''}
           </Button>
         </div>
       </div>

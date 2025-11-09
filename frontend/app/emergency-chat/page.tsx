@@ -14,6 +14,64 @@ interface Message {
   timestamp: string
 }
 
+// Demo conversation showing how the emergency chatbot helps at accident scene
+const DEMO_CONVERSATION: Message[] = [
+  {
+    id: 'demo-1',
+    role: 'assistant',
+    content: "I'm ClaimPilot Emergency Assistant. If you just had an accident, I'm here to guide you through the immediate next steps.\n\nWhat happened?",
+    timestamp: new Date(Date.now() - 600000).toISOString(),
+  },
+  {
+    id: 'demo-2',
+    role: 'user',
+    content: "I just got rear-ended at a red light! I'm really shaken up. What should I do?",
+    timestamp: new Date(Date.now() - 540000).toISOString(),
+  },
+  {
+    id: 'demo-3',
+    role: 'assistant',
+    content: "Take a deep breath. You're safe now and I'm here to help. Here's what to do RIGHT NOW:\n\n**IMMEDIATE ACTIONS:**\n1. ✅ Check yourself and passengers for injuries\n2. ✅ Call 911 if anyone is hurt\n3. ✅ Move to safety if possible (but don't leave the scene)\n4. ✅ Turn on hazard lights\n\n**IMPORTANT:** Are you or anyone else injured? Is the scene safe?",
+    timestamp: new Date(Date.now() - 480000).toISOString(),
+  },
+  {
+    id: 'demo-4',
+    role: 'user',
+    content: "No one's hurt, just minor neck pain. The other driver is apologizing saying it's his fault. Should I tell him it's okay?",
+    timestamp: new Date(Date.now() - 420000).toISOString(),
+  },
+  {
+    id: 'demo-5',
+    role: 'assistant',
+    content: "⚠️ **STOP! Do NOT say these things:**\n❌ \"It's okay\" or \"Don't worry about it\"\n❌ \"I'm fine\" (you mentioned neck pain!)\n❌ \"We don't need to call police\"\n❌ Accepting fault or apologizing\n\n**WHAT TO DO INSTEAD:**\n1. 📸 Document EVERYTHING with photos (vehicles, damage, intersection, license plates)\n2. 🚓 Call police for a report - this protects you legally\n3. 📝 Get the other driver's info but limit conversation\n4. 🏥 Get checked by a doctor (neck pain = potential injury)\n5. 👥 Get witness contact info if anyone saw it\n\n**Why this matters:** Insurance companies use your words against you. Saying \"I'm fine\" can void injury claims later. Accepting fault can cost you thousands.",
+    timestamp: new Date(Date.now() - 360000).toISOString(),
+  },
+  {
+    id: 'demo-6',
+    role: 'user',
+    content: "Oh wow, I didn't know that. What info should I collect from the other driver?",
+    timestamp: new Date(Date.now() - 300000).toISOString(),
+  },
+  {
+    id: 'demo-7',
+    role: 'assistant',
+    content: "**GET THIS INFO FROM THE OTHER DRIVER:**\n\n📋 Driver Info:\n• Full name and phone number\n• Driver's license number\n• License plate number\n\n🛡️ Insurance Info:\n• Insurance company name\n• Policy number\n• Phone number for claims\n\n🚗 Vehicle Info:\n• Year, make, and model\n• VIN (on dashboard near windshield)\n\n**HOW CLAIMPILOT HELPS YOU:**\n✅ I'll organize all this info automatically\n✅ Generate a professional claim document\n✅ Calculate your expected payout\n✅ Find the best repair shops near you\n✅ Ensure you don't miss any compensation you deserve\n\nWhen you're ready, click 'Save & File Claim' and I'll guide you through documenting everything properly. This takes 5 minutes and could save you $1000s.",
+    timestamp: new Date(Date.now() - 240000).toISOString(),
+  },
+  {
+    id: 'demo-8',
+    role: 'user',
+    content: "This is so helpful! The police just arrived. What should I tell them?",
+    timestamp: new Date(Date.now() - 180000).toISOString(),
+  },
+  {
+    id: 'demo-9',
+    role: 'assistant',
+    content: "**TALKING TO POLICE - STICK TO FACTS:**\n\n✅ DO SAY:\n• \"I was stopped at a red light when the other vehicle hit me from behind\"\n• \"The impact happened at [intersection name]\"\n• \"I'm experiencing neck pain\" (mention ALL symptoms)\n\n❌ DON'T SAY:\n• Speculation (\"I think he was texting\")\n• Estimates (\"Maybe 30 mph\")\n• Admissions (\"I might have braked too hard\")\n\n**GET FROM POLICE:**\n• Police report number (CRITICAL for claims)\n• Officer's name and badge number\n• Estimated report availability date\n\n**AFTER THE SCENE:**\nTake photos of:\n📸 All vehicle damage (multiple angles)\n📸 The intersection/scene\n📸 Skid marks or debris\n📸 Your injuries (bruises, etc.)\n\nThen come back here and click 'Save & File Claim' - I'll turn all this into a professional insurance claim that maximizes your payout.",
+    timestamp: new Date(Date.now() - 120000).toISOString(),
+  },
+]
+
 export default function EmergencyChatPage() {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([
@@ -92,6 +150,10 @@ export default function EmergencyChatPage() {
     router.push('/claims/new?from=emergency')
   }
 
+  const loadDemoConversation = () => {
+    setMessages(DEMO_CONVERSATION)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -115,6 +177,14 @@ export default function EmergencyChatPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                onClick={loadDemoConversation}
+                size="sm"
+                variant="outline"
+                className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+              >
+                ✨ Demo
+              </Button>
               <Button
                 onClick={handleSaveAsClaim}
                 size="sm"

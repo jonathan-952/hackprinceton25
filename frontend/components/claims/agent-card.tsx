@@ -119,10 +119,10 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
       case 'fintrack':
         return (
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-4 text-white">
-              <p className="text-xs uppercase font-semibold opacity-90">Estimated Payout</p>
-              <p className="text-3xl font-bold">${displayOutput.payout?.toLocaleString()}</p>
-              <p className="text-xs opacity-75 mt-1">Damage: ${displayOutput.damage_total} - Deductible: ${displayOutput.deductible}</p>
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+              <p className="text-xs uppercase font-bold text-green-700">Estimated Payout</p>
+              <p className="text-3xl font-bold text-green-700">${displayOutput.payout?.toLocaleString()}</p>
+              <p className="text-xs text-green-600 mt-1">Damage: ${displayOutput.damage_total} - Deductible: ${displayOutput.deductible}</p>
             </div>
 
             {displayOutput.shops && (
@@ -130,26 +130,26 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
                 <p className="text-sm font-bold text-gray-900 mb-3">🔧 Top Repair Shops</p>
                 <div className="space-y-2">
                   {displayOutput.shops.slice(0, 3).map((shop: any, index: number) => (
-                    <div key={index} className="border-2 border-gray-200 rounded-lg p-3">
+                    <div key={index} className="border border-gray-200 bg-gray-50 rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-bold text-sm text-gray-900">{shop.name}</h4>
-                          <p className="text-xs text-gray-600">{shop.address}</p>
+                          <p className="text-xs text-gray-700">{shop.address}</p>
                         </div>
-                        <Badge className="bg-amber-500 text-white">⭐ {shop.rating}</Badge>
+                        <Badge className="bg-amber-100 text-amber-800 border border-amber-300">⭐ {shop.rating}</Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs mt-2">
                         <div>
-                          <span className="text-gray-500">Price</span>
-                          <p className="font-bold text-green-600">${shop.price_estimate}</p>
+                          <span className="text-gray-600 font-medium">Price</span>
+                          <p className="font-bold text-green-700">${shop.price_estimate}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Time</span>
+                          <span className="text-gray-600 font-medium">Time</span>
                           <p className="font-bold text-gray-900">{shop.turnaround_days}d</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Distance</span>
-                          <p className="font-bold text-blue-600">{shop.distance_miles}mi</p>
+                          <span className="text-gray-600 font-medium">Distance</span>
+                          <p className="font-bold text-blue-700">{shop.distance_miles}mi</p>
                         </div>
                       </div>
                     </div>
@@ -233,24 +233,24 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
       case 'drafting':
         return (
           <div className="space-y-3">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm font-bold text-green-900">✓ Professional Claim Document Generated</p>
-              <p className="text-xs text-green-700 mt-1">{displayOutput.pages} pages • Ready for submission</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-bold text-blue-800">✓ Professional Claim Document Generated</p>
+              <p className="text-xs text-blue-600 mt-1">{displayOutput.pages} pages • Ready for submission</p>
             </div>
             {displayOutput.sections && (
               <div>
-                <p className="text-xs font-semibold text-gray-700 mb-2">Included Sections:</p>
+                <p className="text-xs font-bold text-gray-700 mb-2">Included Sections:</p>
                 <div className="space-y-1">
                   {displayOutput.sections.map((section: string, i: number) => (
-                    <div key={i} className="text-xs text-gray-600 flex items-center gap-2">
-                      <div className="w-1 h-1 rounded-full bg-green-500"></div>
+                    <div key={i} className="text-xs text-gray-700 flex items-center gap-2 font-medium">
+                      <div className="w-1 h-1 rounded-full bg-blue-500"></div>
                       {section}
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <Button size="sm" variant="outline" className="w-full" asChild>
+            <Button size="sm" variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50" asChild>
               <a href={displayOutput.pdf_url || '#'} download>
                 📄 Download Claim PDF
               </a>
