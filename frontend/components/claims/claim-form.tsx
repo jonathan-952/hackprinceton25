@@ -187,7 +187,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="incident_date" className="text-xs font-medium">Date *</Label>
+                <Label htmlFor="incident_date" className="text-xs font-semibold text-gray-900">Date *</Label>
                 <Input
                   id="incident_date"
                   type="date"
@@ -198,7 +198,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
                 {errors.incident_date && <p className="text-xs text-red-500">{errors.incident_date}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="incident_time" className="text-xs font-medium">Time *</Label>
+                <Label htmlFor="incident_time" className="text-xs font-semibold text-gray-900">Time *</Label>
                 <Input
                   id="incident_time"
                   type="time"
@@ -211,7 +211,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="incident_location" className="text-xs font-medium">Location *</Label>
+              <Label htmlFor="incident_location" className="text-xs font-semibold text-gray-900">Location *</Label>
               <Input
                 id="incident_location"
                 placeholder="123 Main St, Princeton, NJ"
@@ -223,7 +223,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="incident_type" className="text-xs font-medium">Incident Type *</Label>
+              <Label htmlFor="incident_type" className="text-xs font-semibold text-gray-900">Incident Type *</Label>
               <Select value={formData.incident_type} onValueChange={(value) => updateField('incident_type', value as IncidentType)}>
                 <SelectTrigger className={errors.incident_type ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select type" />
@@ -240,7 +240,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="incident_description" className="text-xs font-medium">Description *</Label>
+              <Label htmlFor="incident_description" className="text-xs font-semibold text-gray-900">Description *</Label>
               <Textarea
                 id="incident_description"
                 placeholder="Describe what happened..."
@@ -260,7 +260,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="vehicle_year" className="text-xs font-medium">Year *</Label>
+                <Label htmlFor="vehicle_year" className="text-xs font-semibold text-gray-900">Year *</Label>
                 <Input
                   id="vehicle_year"
                   type="number"
@@ -272,7 +272,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
                 {errors.vehicle_year && <p className="text-xs text-red-500">{errors.vehicle_year}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vehicle_make" className="text-xs font-medium">Make *</Label>
+                <Label htmlFor="vehicle_make" className="text-xs font-semibold text-gray-900">Make *</Label>
                 <Input
                   id="vehicle_make"
                   placeholder="Honda"
@@ -285,7 +285,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="vehicle_model" className="text-xs font-medium">Model *</Label>
+              <Label htmlFor="vehicle_model" className="text-xs font-semibold text-gray-900">Model *</Label>
               <Input
                 id="vehicle_model"
                 placeholder="Accord"
@@ -298,7 +298,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="license_plate" className="text-xs font-medium">License Plate *</Label>
+                <Label htmlFor="license_plate" className="text-xs font-semibold text-gray-900">License Plate *</Label>
                 <Input
                   id="license_plate"
                   placeholder="ABC1234"
@@ -309,7 +309,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
                 {errors.license_plate && <p className="text-xs text-red-500">{errors.license_plate}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vin" className="text-xs font-medium">VIN (Optional)</Label>
+                <Label htmlFor="vin" className="text-xs font-semibold text-gray-900">VIN (Optional)</Label>
                 <Input
                   id="vin"
                   placeholder="17 characters"
@@ -327,7 +327,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <h2 className="text-base font-semibold text-gray-900 mb-4">Insurance Information</h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="insurance_provider" className="text-xs font-medium">Provider *</Label>
+              <Label htmlFor="insurance_provider" className="text-xs font-semibold text-gray-900">Provider *</Label>
               <Input
                 id="insurance_provider"
                 placeholder="State Farm"
@@ -339,7 +339,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="policy_number" className="text-xs font-medium">Policy Number *</Label>
+              <Label htmlFor="policy_number" className="text-xs font-semibold text-gray-900">Policy Number *</Label>
               <Input
                 id="policy_number"
                 placeholder="SF-987-654-321"
@@ -352,7 +352,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="coverage_type" className="text-xs font-medium">Coverage Type *</Label>
+                <Label htmlFor="coverage_type" className="text-xs font-semibold text-gray-900">Coverage Type *</Label>
                 <Select value={formData.coverage_type} onValueChange={(value) => updateField('coverage_type', value as CoverageType)}>
                   <SelectTrigger className={errors.coverage_type ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select" />
@@ -366,7 +366,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
                 {errors.coverage_type && <p className="text-xs text-red-500">{errors.coverage_type}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="deductible" className="text-xs font-medium">Deductible *</Label>
+                <Label htmlFor="deductible" className="text-xs font-semibold text-gray-900">Deductible *</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
                   <Input
@@ -389,7 +389,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <h2 className="text-base font-semibold text-gray-900 mb-4">Damage Details</h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="damage_description" className="text-xs font-medium">Description *</Label>
+              <Label htmlFor="damage_description" className="text-xs font-semibold text-gray-900">Description *</Label>
               <Textarea
                 id="damage_description"
                 placeholder="Describe the damage..."
@@ -402,7 +402,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="damage_severity" className="text-xs font-medium">Severity *</Label>
+              <Label htmlFor="damage_severity" className="text-xs font-semibold text-gray-900">Severity *</Label>
               <Select value={formData.damage_severity} onValueChange={(value) => updateField('damage_severity', value as DamageSeverity)}>
                 <SelectTrigger className={errors.damage_severity ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Select severity" />
@@ -423,7 +423,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <h2 className="text-base font-semibold text-gray-900 mb-4">Police Report</h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Were police called? *</Label>
+              <Label className="text-xs font-semibold text-gray-900">Were police called? *</Label>
               <div className="flex gap-3">
                 <Button
                   type="button"
@@ -449,7 +449,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             {formData.police_called && (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="police_report_number" className="text-xs font-medium">Report Number *</Label>
+                  <Label htmlFor="police_report_number" className="text-xs font-semibold text-gray-900">Report Number *</Label>
                   <Input
                     id="police_report_number"
                     placeholder="PR-2025-001547"
@@ -461,7 +461,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="officer_name" className="text-xs font-medium">Officer Name (Optional)</Label>
+                  <Label htmlFor="officer_name" className="text-xs font-semibold text-gray-900">Officer Name (Optional)</Label>
                   <Input
                     id="officer_name"
                     placeholder="Officer Martinez"
@@ -473,7 +473,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="witness_info" className="text-xs font-medium">Witness Info (Optional)</Label>
+              <Label htmlFor="witness_info" className="text-xs font-semibold text-gray-900">Witness Info (Optional)</Label>
               <Textarea
                 id="witness_info"
                 placeholder="Name, contact, statements..."
@@ -490,7 +490,7 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
           <h2 className="text-base font-semibold text-gray-900 mb-4">Documents (Optional)</h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="documents" className="text-xs font-medium">Upload Files</Label>
+              <Label htmlFor="documents" className="text-xs font-semibold text-gray-900">Upload Files</Label>
               <Input
                 id="documents"
                 type="file"

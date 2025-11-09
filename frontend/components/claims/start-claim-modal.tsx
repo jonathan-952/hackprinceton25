@@ -30,7 +30,7 @@ export function StartClaimModal({ isOpen, onClose, onSelectChatbot, onSelectForm
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             How can we help you today?
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-700 font-medium">
             Choose the best option for your situation
           </p>
         </div>
@@ -56,11 +56,11 @@ export function StartClaimModal({ isOpen, onClose, onSelectChatbot, onSelectForm
               I Need Help NOW
             </h3>
 
-            <p className="text-gray-700 mb-4 leading-relaxed">
+            <p className="text-gray-800 font-medium mb-4 leading-relaxed">
               Just had an accident? Talk to our AI assistant immediately for guidance on what to do next.
             </p>
 
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-gray-700">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                 <span>Instant answers to urgent questions</span>
@@ -95,11 +95,11 @@ export function StartClaimModal({ isOpen, onClose, onSelectChatbot, onSelectForm
               File a Full Claim
             </h3>
 
-            <p className="text-gray-700 mb-4 leading-relaxed">
+            <p className="text-gray-800 font-medium mb-4 leading-relaxed">
               Have all your information ready? Fill out the detailed form to process your claim.
             </p>
 
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-gray-700">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
                 <span>6-step guided claim process</span>

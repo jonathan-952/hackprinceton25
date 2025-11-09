@@ -25,43 +25,38 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
     const agentConfigs: Agent[] = [
       {
         id: 'core_agent',
-        name: '🕵️ ClaimPilot Core',
-        icon: '🕵️',
-        description: 'Extracts structured data from uploaded documents',
+        name: 'ClaimPilot Core',
+        description: 'Analyzes and extracts key information from your uploaded documents including police reports, insurance forms, and accident photos. This agent structures the raw data into a format our other agents can use.',
         status: orchestratorState.core_agent?.status || 'idle',
         output: orchestratorState.core_agent?.data,
       },
       {
         id: 'fintrack',
-        name: '💸 FinTrack',
-        icon: '💸',
-        description: 'Calculates damage estimates and payout amounts',
+        name: 'FinTrack',
+        description: 'Estimates repair costs and calculates your expected payout based on damage severity, vehicle make/model, and historical claim data. Helps you know if settlement offers are fair.',
         status: orchestratorState.fintrack?.status || 'idle',
         output: orchestratorState.fintrack?.data,
         dependencies: ['core_agent'],
       },
       {
         id: 'repair_advisor',
-        name: '🔧 Repair Advisor',
-        icon: '🔧',
-        description: 'Recommends nearby repair shops with ratings and pricing',
+        name: 'Repair Advisor',
+        description: 'Finds nearby certified repair shops, compares their ratings and pricing, and recommends the best options based on your vehicle type and damage. Includes real customer reviews and estimated wait times.',
         status: orchestratorState.repair_advisor?.status || 'idle',
         output: orchestratorState.repair_advisor?.data,
       },
       {
         id: 'drafting',
-        name: '🧾 Claim Drafting Agent',
-        icon: '🧾',
-        description: 'Generates formal claim documents and PDFs',
+        name: 'Claim Drafting Agent',
+        description: 'Creates a professional, legally-compliant claim document ready to submit to your insurance company. Includes all necessary details, supporting evidence, and calculated estimates in a formal PDF format.',
         status: orchestratorState.drafting?.status || 'idle',
         output: orchestratorState.drafting?.data,
         dependencies: ['core_agent', 'fintrack'],
       },
       {
         id: 'compliance',
-        name: '✅ Compliance & Submission',
-        icon: '✅',
-        description: 'Validates claim completeness and readiness',
+        name: 'Compliance & Submission',
+        description: 'Checks your claim for completeness, verifies all required documents are included, and ensures compliance with state laws and insurance requirements before final submission.',
         status: orchestratorState.compliance?.status || 'idle',
         output: orchestratorState.compliance?.data,
       },
@@ -171,8 +166,8 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-lg">Claim Orchestrator</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="font-semibold text-lg text-gray-900">Claim Orchestrator</h3>
+        <p className="text-sm text-gray-700">
           Run specialized agents to process and analyze your claim
         </p>
       </div>
