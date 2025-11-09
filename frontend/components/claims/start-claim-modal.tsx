@@ -30,7 +30,7 @@ export function StartClaimModal({ isOpen, onClose, onSelectChatbot, onSelectForm
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             How can we help you today?
           </h2>
-          <p className="text-gray-700 font-medium">
+          <p className="text-gray-900 font-bold">
             Choose the best option for your situation
           </p>
         </div>

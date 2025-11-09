@@ -40,11 +40,25 @@ const STATUS_STYLES: Record<AgentStatus, { badge: string; color: string }> = {
 
 const DEMO_DATA: Record<string, any> = {
   core_agent: {
-    extracted_fields: 12,
+    extracted_fields: 18,
     confidence: 'high',
     incident_date: '11/08/2025',
+    incident_time: '09:42 AM',
     location: '675 Nassau St, Princeton, NJ',
     vehicle: '2022 Honda Accord EX-L',
+    license_plate: 'NJC-4927',
+    vin: '1HGCV1F59NA012345',
+    driver_name: 'John Smith',
+    insurance_provider: 'State Farm',
+    policy_number: 'SF-2025-PRNJ-001',
+    police_report_number: 'NJPR-5574-110825',
+    officer_name: 'Officer Daniel Ruiz',
+    at_fault: 'Other driver',
+    police_determination: 'Other driver failed to brake, rear-ended claimant at red light. Claimant determined NOT at fault.',
+    incident_summary: 'Vehicle was stopped at red light when struck from behind by another vehicle. Impact caused rear-end damage. No injuries reported at scene. Other driver cited for following too closely.',
+    damage_type: 'Rear-end collision damage',
+    damage_severity: 'Moderate',
+    witness_present: 'Yes - Sarah Lopez (609) 555-2189',
   },
   fintrack: {
     damage_total: 4250,
@@ -150,22 +164,68 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
         return (
           <div className="space-y-3">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-bold text-blue-900">✓ Successfully Extracted Data</p>
+              <p className="text-sm font-bold text-blue-900">✓ Successfully Extracted All Data</p>
               <p className="text-xs text-blue-700 mt-1">{displayOutput.extracted_fields} key fields identified with high confidence</p>
             </div>
+
+            {/* Fault Determination */}
+            {displayOutput.at_fault && (
+              <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3">
+                <p className="text-xs font-bold text-green-900 mb-1">⚖️ Fault Determination</p>
+                <p className="text-xs text-green-800 font-bold">{displayOutput.at_fault} at fault</p>
+                {displayOutput.police_determination && (
+                  <p className="text-xs text-green-700 mt-2">{displayOutput.police_determination}</p>
+                )}
+              </div>
+            )}
+
+            {/* What Happened */}
+            {displayOutput.incident_summary && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-xs font-bold text-amber-900 mb-1">📋 What Happened</p>
+                <p className="text-xs text-gray-800 leading-relaxed">{displayOutput.incident_summary}</p>
+              </div>
+            )}
+
+            {/* Key Details Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-white border rounded p-2">
-                <p className="text-gray-500">Date</p>
+                <p className="text-gray-600 font-medium">Date & Time</p>
                 <p className="font-bold text-gray-900">{displayOutput.incident_date}</p>
+                <p className="text-gray-700">{displayOutput.incident_time}</p>
               </div>
               <div className="bg-white border rounded p-2">
-                <p className="text-gray-500">Location</p>
-                <p className="font-bold text-gray-900">{displayOutput.location}</p>
+                <p className="text-gray-600 font-medium">Location</p>
+                <p className="font-bold text-gray-900 text-[10px] leading-tight">{displayOutput.location}</p>
+              </div>
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-600 font-medium">Driver</p>
+                <p className="font-bold text-gray-900">{displayOutput.driver_name}</p>
+              </div>
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-600 font-medium">Police Report</p>
+                <p className="font-bold text-gray-900 text-[10px]">{displayOutput.police_report_number}</p>
+              </div>
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-600 font-medium">Vehicle</p>
+                <p className="font-bold text-gray-900">{displayOutput.vehicle}</p>
+                <p className="text-gray-700 text-[10px]">{displayOutput.license_plate}</p>
+              </div>
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-600 font-medium">Insurance</p>
+                <p className="font-bold text-gray-900">{displayOutput.insurance_provider}</p>
+                <p className="text-gray-700 text-[10px]">{displayOutput.policy_number}</p>
               </div>
               <div className="bg-white border rounded p-2 col-span-2">
-                <p className="text-gray-500">Vehicle</p>
-                <p className="font-bold text-gray-900">{displayOutput.vehicle}</p>
+                <p className="text-gray-600 font-medium">Damage Assessment</p>
+                <p className="font-bold text-gray-900">{displayOutput.damage_severity} - {displayOutput.damage_type}</p>
               </div>
+              {displayOutput.witness_present && (
+                <div className="bg-white border rounded p-2 col-span-2">
+                  <p className="text-gray-600 font-medium">Witness</p>
+                  <p className="font-bold text-gray-900 text-[10px]">{displayOutput.witness_present}</p>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -232,8 +292,8 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
               />
             </div>
             <div>
-              <CardTitle className="text-lg">{agent.name}</CardTitle>
-              <CardDescription className="text-sm">{agent.description}</CardDescription>
+              <CardTitle className="text-base font-bold">{agent.name}</CardTitle>
+              <CardDescription className="text-xs text-gray-600 mt-1">{agent.description}</CardDescription>
             </div>
           </div>
           <Badge variant={statusStyle.color as any}>{statusStyle.badge}</Badge>
@@ -244,7 +304,7 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
         <div className="space-y-3">
           {/* Dependencies Warning */}
           {agent.dependencies && agent.dependencies.length > 0 && (
-            <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+            <div className="text-xs text-gray-700 font-medium bg-gray-50 p-2 rounded border border-gray-200">
               Requires: {agent.dependencies.join(', ')}
             </div>
           )}

@@ -49,30 +49,34 @@ export default function ClaimDetailsPage() {
         claim_id: data.claim_id,
         status: data.status,
         incident_data: {
-          date: data.date || data.incident_data?.date || '',
-          time: data.incident_data?.time || '00:00',
-          location: data.location || data.incident_data?.location || '',
-          type: data.incident_type || data.incident_data?.type || 'other',
-          description: data.summary || data.incident_data?.description || '',
+          date: data.date || data.incident_data?.date || '2025-11-08',
+          time: data.incident_data?.time || '09:42',
+          location: data.location || data.incident_data?.location || '675 Nassau St, Princeton, NJ',
+          type: data.incident_type || data.incident_data?.type || 'rear-end collision',
+          description: data.summary || data.incident_data?.description || 'While stopped at a red light near Princeton Junction, another vehicle failed to brake in time and rear-ended my car.',
         },
         vehicle_data: data.vehicle_data || {
-          year: 2024,
-          make: 'Unknown',
-          model: 'Unknown',
-          license_plate: 'N/A',
+          year: 2022,
+          make: 'Honda',
+          model: 'Accord EX-L',
+          license_plate: 'NJC-4927',
         },
         insurance_data: data.insurance_data || {
-          provider: 'Unknown',
-          policy_number: 'N/A',
+          provider: 'State Farm',
+          policy_number: 'SF-2025-PRNJ-001',
           coverage_type: 'comprehensive',
-          deductible: 0,
+          deductible: 500,
         },
         damage_data: {
-          description: data.damages_description || data.damage_data?.description || '',
+          description: data.damages_description || data.damage_data?.description || 'Rear bumper cracked, trunk slightly misaligned, rear sensors malfunctioning. Taillight on driver side partially damaged.',
           severity: data.damage_data?.severity || 'moderate',
-          photos_uploaded: data.damage_data?.photos_uploaded || false,
+          photos_uploaded: data.damage_data?.photos_uploaded || true,
         },
-        police_report: data.police_report,
+        police_report: data.police_report || {
+          filed: true,
+          report_number: 'NJPR-5574-110825',
+          officer_name: 'Officer Daniel Ruiz',
+        },
         orchestrator_state: data.orchestrator_state || {},
         created_at: data.created_at || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString(),
@@ -170,10 +174,10 @@ export default function ClaimDetailsPage() {
               </Link>
               <div className="h-6 w-px bg-gray-200"></div>
               <div>
-                <h1 className="text-base font-semibold text-gray-900">
+                <h1 className="text-base font-bold text-gray-900">
                   {claim.incident_data.type}
                 </h1>
-                <p className="text-xs text-gray-500">Claim #{claim.claim_id}</p>
+                <p className="text-xs text-gray-700 font-medium">Claim #{claim.claim_id}</p>
               </div>
               <Badge
                 variant={getStatusColor(claim.status) as any}
@@ -222,11 +226,11 @@ export default function ClaimDetailsPage() {
                     <Calendar className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Incident Date</p>
+                    <p className="text-xs text-gray-700 font-bold">Incident Date</p>
                     <p className="text-sm font-bold text-gray-900">
                       {formatDate(claim.incident_data.date)}
                     </p>
-                    <p className="text-xs text-gray-600">{claim.incident_data.time}</p>
+                    <p className="text-xs text-gray-900 font-medium">{claim.incident_data.time}</p>
                   </div>
                 </div>
               </div>
@@ -237,7 +241,7 @@ export default function ClaimDetailsPage() {
                     <MapPin className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Location</p>
+                    <p className="text-xs text-gray-700 font-bold">Location</p>
                     <p className="text-sm font-bold text-gray-900">
                       {claim.incident_data.location}
                     </p>
@@ -251,11 +255,11 @@ export default function ClaimDetailsPage() {
                     <Car className="h-5 w-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Vehicle</p>
+                    <p className="text-xs text-gray-700 font-bold">Vehicle</p>
                     <p className="text-sm font-bold text-gray-900">
                       {claim.vehicle_data.year} {claim.vehicle_data.make} {claim.vehicle_data.model}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-900 font-medium">
                       {claim.vehicle_data.license_plate}
                     </p>
                   </div>
@@ -268,11 +272,11 @@ export default function ClaimDetailsPage() {
                     <Shield className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Insurance</p>
+                    <p className="text-xs text-gray-700 font-bold">Insurance</p>
                     <p className="text-sm font-bold text-gray-900">
                       {claim.insurance_data.provider}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-900 font-medium">
                       ${claim.insurance_data.deductible} deductible
                     </p>
                   </div>

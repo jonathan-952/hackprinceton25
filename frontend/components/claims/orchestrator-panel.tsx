@@ -147,8 +147,8 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-lg text-gray-900">Claim Orchestrator</h3>
-        <p className="text-sm text-gray-700">
+        <h3 className="font-bold text-base text-gray-900">Claim Orchestrator</h3>
+        <p className="text-xs text-gray-800 font-medium">
           Run specialized agents to process and analyze your claim
         </p>
       </div>
