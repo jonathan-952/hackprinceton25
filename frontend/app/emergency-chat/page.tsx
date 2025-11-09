@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2, FileText, AlertCircle } from 'lucide-react'
+import { Send, Loader2, FileText, AlertCircle, Save } from 'lucide-react'
 
 interface Message {
   id: string
@@ -14,11 +15,12 @@ interface Message {
 }
 
 export default function EmergencyChatPage() {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "🚨 **Emergency Accident Support**\n\nI'm ClaimPilot, your post-accident companion. If you just had an accident, I'm here to help you RIGHT NOW.\n\n**I can help you with:**\n• What to do at the scene\n• Whether to call police or ambulance\n• How to document the accident\n• Legal & medical next steps\n• Starting your insurance claim\n\nWhat happened? Tell me everything.",
+      content: "I'm ClaimPilot. If you just had an accident, I'm here to guide you through the immediate next steps.\n\nWhat happened?",
       timestamp: new Date().toISOString(),
     },
   ])
@@ -84,6 +86,12 @@ export default function EmergencyChatPage() {
     }
   }
 
+  const handleSaveAsClaim = async () => {
+    // Save conversation context and redirect to claim form
+    localStorage.setItem('emergencyChatHistory', JSON.stringify(messages))
+    router.push('/claims/new?from=emergency')
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -92,59 +100,63 @@ export default function EmergencyChatPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl shadow-sm">
-        <div className="px-6 py-4">
+    <div className="flex h-screen flex-col bg-white">
+      {/* Minimal Professional Header */}
+      <header className="border-b border-gray-200 bg-white">
+        <div className="px-8 py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-orange-600 text-white shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500 text-white">
                 <AlertCircle className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">ClaimPilot Emergency Support</h1>
-                <p className="text-xs text-red-600 font-semibold">24/7 Post-Accident Help</p>
+                <h1 className="text-lg font-semibold text-gray-900">Emergency Support</h1>
+                <p className="text-sm text-gray-500">Get immediate guidance</p>
               </div>
             </div>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors"
-            >
-              <FileText className="h-4 w-4" />
-              My Claims
-            </Link>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleSaveAsClaim}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save & File Claim
+              </Button>
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-lg bg-gray-900 hover:bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Emergency Banner */}
-      <div className="bg-gradient-to-r from-red-500 to-orange-500 px-6 py-3 text-center shadow-md">
-        <p className="text-white font-semibold text-sm">
-          🚨 <strong>Just had an accident?</strong> Stay calm. I'll guide you through every step.
-        </p>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+      {/* Chat Messages - Clean & Professional */}
+      <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="max-w-3xl mx-auto px-8 py-12 space-y-8">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[85%] rounded-2xl px-5 py-4 ${
-                  message.role === 'user'
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-white text-gray-900 border-2 border-gray-200 shadow-sm'
-                }`}
-              >
-                <p className="text-base whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                <p
-                  className={`text-xs mt-2 ${
-                    message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+              <div className={`max-w-[75%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
+                <div
+                  className={`rounded-2xl px-6 py-4 ${
+                    message.role === 'user'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-900 border border-gray-200'
                   }`}
                 >
+                  <p className="text-[15px] leading-relaxed whitespace-pre-wrap font-normal">
+                    {message.content}
+                  </p>
+                </div>
+                <p className="text-xs text-gray-400 mt-2 px-2">
                   {new Date(message.timestamp).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -156,10 +168,10 @@ export default function EmergencyChatPage() {
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white border-2 border-gray-200 rounded-2xl px-5 py-4 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                  <span className="text-base text-gray-700">ClaimPilot is thinking...</span>
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <span className="text-[15px] text-gray-600">Analyzing...</span>
                 </div>
               </div>
             </div>
@@ -169,34 +181,34 @@ export default function EmergencyChatPage() {
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white p-6 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-4">
+      {/* Input Area - Professional */}
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-3xl mx-auto px-8 py-6">
+          <div className="flex gap-3">
             <Textarea
               ref={textareaRef}
-              placeholder="Describe what happened... I'm here to help."
+              placeholder="Describe what happened..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-h-[70px] resize-none text-base"
+              className="min-h-[56px] resize-none text-[15px] bg-gray-50 border-gray-200"
               disabled={isLoading}
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-[70px] w-[70px] bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-md"
+              className="h-[56px] w-[56px] bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
             >
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-6 w-6" />
+                <Send className="h-5 w-5" />
               )}
             </Button>
           </div>
-          <p className="text-xs text-gray-500 mt-3 text-center">
-            Press Enter to send • Shift+Enter for new line • <Link href="/dashboard" className="text-blue-600 hover:underline">Need to file a claim?</Link>
+          <p className="text-xs text-gray-400 mt-3">
+            Press Enter to send • This conversation can be saved as a claim
           </p>
         </div>
       </div>
