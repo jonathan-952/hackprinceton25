@@ -20,10 +20,11 @@ export default function Dashboard() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [mcpSummary, setMcpSummary] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [useGemini, setUseGemini] = useState(false);
 
   useEffect(() => {
     fetchClaims();
@@ -41,16 +42,30 @@ export default function Dashboard() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleFileUpload = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
 
     setUploading(true);
     try {
+      // Process the first/primary file
+      const primaryFile = files[0];
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', primaryFile);
 
-      // Call MCP endpoint to process document with emailagent tools
-      const response = await fetch('http://localhost:9000/api/mcp-process-document', {
+      // Call MCP endpoint to process document and extract structured data
+      const mcpUrl = `http://localhost:9000/api/mcp-process-document?extract_data=true&use_gemini=${useGemini}`;
+      const response = await fetch(mcpUrl, {
         method: 'POST',
         body: formData
       });
@@ -58,11 +73,36 @@ export default function Dashboard() {
       const data = await response.json();
 
       if (data.success) {
-        // Display the MCP summary
+        console.log('MCP Processing complete:', data);
+
+        // If we have structured data, create a full claim
+        if (data.structured_data && !data.structured_data.error) {
+          // Create claim via upload endpoint
+          const claimFormData = new FormData();
+          claimFormData.append('file', primaryFile);
+
+          const claimResponse = await fetch('http://localhost:9000/api/upload', {
+            method: 'POST',
+            body: claimFormData
+          });
+
+          const claimResult = await claimResponse.json();
+
+          if (claimResult.claim_id) {
+            // Claim created successfully - redirect to claim page
+            router.push(`/claim/${claimResult.claim_id}`);
+            return;
+          }
+        }
+
+        // Fallback: just show summary
         setMcpSummary(data.summary);
         setShowSummary(true);
         setShowUpload(false);
-        setFile(null);
+        setFiles([]);
+
+        // Refresh claims list
+        fetchClaims();
       } else {
         alert('Error processing document. Please try again.');
       }
@@ -146,7 +186,8 @@ export default function Dashboard() {
                 <input
                   type="file"
                   accept=".pdf,.txt"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={handleFileChange}
                   className="hidden"
                   id="file-upload"
                 />
@@ -155,17 +196,54 @@ export default function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <p className="mt-2 text-sm text-gray-600">
-                    {file ? file.name : 'Click to upload or drag and drop'}
+                    {files.length > 0 ? `${files.length} file(s) selected` : 'Click to upload or drag and drop'}
                   </p>
-                  <p className="text-xs text-gray-500">PDF or TXT up to 10MB</p>
+                  <p className="text-xs text-gray-500">PDF or TXT up to 10MB (multiple files supported)</p>
                 </label>
+
+                {files.length > 0 && (
+                  <div className="mt-4 space-y-2 text-left">
+                    {files.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm text-gray-700 truncate flex-1">{file.name}</span>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* AI Provider Selection */}
+              <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">AI Provider:</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setUseGemini(false)}
+                    className={`px-3 py-1 rounded text-sm ${!useGemini ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+                  >
+                    OpenAI
+                  </button>
+                  <button
+                    onClick={() => setUseGemini(true)}
+                    className={`px-3 py-1 rounded text-sm ${useGemini ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+                  >
+                    Gemini
+                  </button>
+                </div>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     setShowUpload(false);
-                    setFile(null);
+                    setFiles([]);
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                   disabled={uploading}
@@ -174,7 +252,7 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={handleFileUpload}
-                  disabled={!file || uploading}
+                  disabled={files.length === 0 || uploading}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? 'Processing...' : 'Start Processing'}

@@ -56,7 +56,7 @@ export default function ClaimDetailsPage() {
 
   const fetchClaimData = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/claims/${claimId}`);
+      const response = await fetch(`http://localhost:9000/api/claims/${claimId}`);
       const data = await response.json();
       setClaim(data);
 
@@ -73,7 +73,7 @@ export default function ClaimDetailsPage() {
 
   const fetchAgentStatus = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/claims/${claimId}/agent-status`);
+      const response = await fetch(`http://localhost:9000/api/claims/${claimId}/agent-status`);
       const data = await response.json();
       setAgentStatus(data.agent_status);
     } catch (error) {

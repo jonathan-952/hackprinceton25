@@ -47,10 +47,6 @@ def summarize_claim(claim_text: str) -> str | None:
     )
     return response.choices[0].message.content
 
-@mcp.tool()
-def 
-
-
 if __name__ == "__main__":
     # transport="stdio" is easiest for local testing; you can also use http/sse
     mcp.run(transport="stdio")

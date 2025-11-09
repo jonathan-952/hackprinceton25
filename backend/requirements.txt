@@ -46,6 +46,7 @@ fastmcp==2.13.0.2
 filelock==3.16.1
 fonttools==4.58.5
 fqdn==1.5.1
+google-generativeai==0.8.3
 h11==0.14.0
 httpcore==1.0.7
 httptools==0.6.4
