@@ -283,6 +283,61 @@ async def process_claim(
 
 # ==================== Claim Management Endpoints ====================
 
+@app.post("/api/claims")
+async def create_claim(request: dict):
+    """
+    Create a new claim from structured data
+
+    Args:
+        request: Claim data dictionary
+
+    Returns:
+        Created claim
+    """
+    try:
+        from utils.data_models import Claim
+        import uuid
+        from datetime import datetime
+
+        # Generate claim ID
+        claim_id = f"C-{uuid.uuid4().hex[:8].upper()}"
+
+        # Extract data from request
+        incident_data = request.get('incident_data', {})
+        vehicle_data = request.get('vehicle_data', {})
+        insurance_data = request.get('insurance_data', {})
+        damage_data = request.get('damage_data', {})
+        police_report = request.get('police_report', {})
+
+        # Create claim object
+        claim = Claim(
+            claim_id=claim_id,
+            incident_type=incident_data.get('type', 'Unknown'),
+            date=incident_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+            location=incident_data.get('location', ''),
+            damages_description=damage_data.get('description', ''),
+            estimated_damage=damage_data.get('severity', 'moderate'),
+            status=ClaimStatus(request.get('status', 'draft'))
+        )
+
+        # Store in database
+        claimpilot_agent.claims_database[claim_id] = claim
+
+        # Save to Supabase if enabled
+        from utils.supabase_client import save_claim_to_db
+        save_claim_to_db(request)
+
+        return {
+            'success': True,
+            'claim_id': claim_id,
+            'claim': claim.model_dump()
+        }
+
+    except Exception as e:
+        print(f"Error creating claim: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/claims")
 async def list_claims(status: Optional[str] = None):
     """
@@ -542,35 +597,84 @@ async def get_agent_status(claim_id: str):
 
 @app.post("/api/process-full-claim")
 async def process_full_claim(
-    file: UploadFile = File(...),
-    message: Optional[str] = Form(None)
+    files: list[UploadFile] = File(None),
+    claim_data: Optional[str] = Form(None)
 ):
     """
     Process a full claim workflow with all agents
 
     Args:
-        file: Uploaded document
-        message: Optional message
+        files: List of uploaded documents (optional)
+        claim_data: JSON string of claim data (optional)
 
     Returns:
         Complete claim processing results
     """
     try:
-        # Read file content
-        content = await file.read()
-        encoded_content = base64.b64encode(content).decode('utf-8')
+        import json
+        import uuid
 
-        # Create user message
-        user_message = UserMessage(
-            message=message or "Process full claim workflow",
-            file_data=encoded_content,
-            file_name=file.filename
-        )
+        # Parse claim data if provided
+        if claim_data:
+            data = json.loads(claim_data)
 
-        # Process with full workflow
-        response = orchestrator.process_full_claim(user_message)
-        return response
+            # Generate claim ID
+            claim_id = f"C-{uuid.uuid4().hex[:8].upper()}"
 
+            # Extract data from request
+            incident_data = data.get('incident_data', {})
+            vehicle_data = data.get('vehicle_data', {})
+            insurance_data = data.get('insurance_data', {})
+            damage_data = data.get('damage_data', {})
+            police_report = data.get('police_report', {})
+
+            # Create claim object
+            claim = Claim(
+                claim_id=claim_id,
+                incident_type=incident_data.get('type', 'Unknown'),
+                date=incident_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                location=incident_data.get('location', ''),
+                damages_description=damage_data.get('description', ''),
+                estimated_damage=damage_data.get('severity', 'moderate'),
+                status=ClaimStatus(data.get('status', 'draft'))
+            )
+
+            # Store in database
+            claimpilot_agent.claims_database[claim_id] = claim
+
+            # Save to Supabase if enabled
+            from utils.supabase_client import save_claim_to_db
+            save_claim_to_db(data)
+
+            # TODO: Process uploaded files if any
+            # For now, just return the created claim
+
+            return {
+                'success': True,
+                'claim_id': claim_id,
+                'claim': claim.model_dump()
+            }
+        elif files and len(files) > 0:
+            # Process first file with orchestrator
+            file = files[0]
+            content = await file.read()
+            encoded_content = base64.b64encode(content).decode('utf-8')
+
+            # Create user message
+            user_message = UserMessage(
+                message="Process full claim workflow",
+                file_data=encoded_content,
+                file_name=file.filename
+            )
+
+            # Process with full workflow
+            response = orchestrator.process_full_claim(user_message)
+            return response
+        else:
+            raise HTTPException(status_code=400, detail="Either files or claim_data must be provided")
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON in claim_data: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing claim: {str(e)}")
 
