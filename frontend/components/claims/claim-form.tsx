@@ -29,6 +29,32 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const fillDemoData = () => {
+    setFormData({
+      incident_date: '2025-11-08',
+      incident_time: '09:42',
+      incident_location: '675 Nassau St, Princeton, NJ',
+      incident_type: 'rear-end collision',
+      incident_description: 'While stopped at a red light near Princeton Junction, another vehicle failed to brake in time and rear-ended my car. The impact caused visible damage to the rear bumper and trunk area. No major injuries reported, but I felt mild neck stiffness afterward.',
+      vehicle_year: 2022,
+      vehicle_make: 'Honda',
+      vehicle_model: 'Accord EX-L',
+      license_plate: 'NJC-4927',
+      vin: '1HGCV1F59NA012345',
+      insurance_provider: 'State Farm',
+      policy_number: 'SF-2025-PRNJ-001',
+      coverage_type: 'comprehensive',
+      deductible: 500,
+      damage_description: 'Rear bumper cracked, trunk slightly misaligned, rear sensors malfunctioning. Taillight on driver side partially damaged.',
+      damage_severity: 'moderate',
+      police_called: true,
+      police_report_number: 'NJPR-5574-110825',
+      officer_name: 'Officer Daniel Ruiz',
+      witness_info: 'Sarah Lopez - (609) 555-2189 - "I was behind the claimant\'s car and saw the SUV hit them from behind while the light was still red."',
+    })
+    setErrors({})
+  }
+
   const updateField = (field: keyof ClaimFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user updates field
@@ -176,14 +202,27 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
     <div className="max-w-2xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">File Your Claim</h1>
-        <p className="text-sm text-gray-600 mt-1">Fill out the information below to submit your claim</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">File Your Claim</h1>
+            <p className="text-sm text-gray-600 mt-1">Fill out the information below to submit your claim</p>
+          </div>
+          <Button
+            onClick={fillDemoData}
+            variant="outline"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600 shadow-lg"
+          >
+            ✨ Autofill Demo Data
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
         {/* Section 1: Incident Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Incident Information</h2>
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-blue-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">📋</span> Incident Information
+          </h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -255,8 +294,10 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
         </div>
 
         {/* Section 2: Vehicle Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Vehicle Information</h2>
+        <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-orange-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">🚗</span> Vehicle Information
+          </h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -323,8 +364,10 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
         </div>
 
         {/* Section 3: Insurance Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Insurance Information</h2>
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-green-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">🛡️</span> Insurance Information
+          </h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="insurance_provider" className="text-xs font-semibold text-gray-900">Provider *</Label>
@@ -385,8 +428,10 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
         </div>
 
         {/* Section 4: Damage Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Damage Details</h2>
+        <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-yellow-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">⚠️</span> Damage Details
+          </h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="damage_description" className="text-xs font-semibold text-gray-900">Description *</Label>
@@ -419,8 +464,10 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
         </div>
 
         {/* Section 5: Police Report */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Police Report</h2>
+        <div className="bg-gradient-to-br from-red-50 to-pink-50 border-2 border-red-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-red-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">🚨</span> Police Report
+          </h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-gray-900">Were police called? *</Label>
@@ -486,8 +533,10 @@ export function ClaimForm({ onComplete }: ClaimFormProps) {
         </div>
 
         {/* Section 6: Documents */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Documents (Optional)</h2>
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-base font-bold text-purple-900 mb-4 flex items-center gap-2">
+            <span className="text-xl">📎</span> Documents (Optional)
+          </h2>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="documents" className="text-xs font-semibold text-gray-900">Upload Files</Label>

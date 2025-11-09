@@ -205,67 +205,79 @@ export default function ClaimDetailsPage() {
       {/* Main Content - 2 Column Layout */}
       <div className="flex-1 overflow-hidden flex">
         {/* Left: Main Claim Details */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
           <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
-            {/* Key Info Grid */}
+            {/* Processing Status - AT THE TOP */}
+            <div className="bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl p-6 shadow-xl">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-2xl">⚡</span> Processing Status
+              </h2>
+              <ClaimProgressFlow
+                currentStep={currentStep}
+                estimatedPayout={estimatedPayout}
+                nextActions={nextActions}
+              />
+            </div>
+
+            {/* Key Info Grid - COLORFUL */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                    <Calendar className="h-5 w-5 text-gray-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/30 backdrop-blur">
+                    <Calendar className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Incident Date</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-white/90 font-semibold">📅 Incident Date</p>
+                    <p className="text-base font-bold text-white">
                       {formatDate(claim.incident_data.date)}
                     </p>
-                    <p className="text-xs text-gray-600">{claim.incident_data.time}</p>
+                    <p className="text-xs text-white/80">{claim.incident_data.time}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                    <MapPin className="h-5 w-5 text-gray-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/30 backdrop-blur">
+                    <MapPin className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Location</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-white/90 font-semibold">📍 Location</p>
+                    <p className="text-sm font-bold text-white">
                       {claim.incident_data.location}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                    <Car className="h-5 w-5 text-gray-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/30 backdrop-blur">
+                    <Car className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Vehicle</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-white/90 font-semibold">🚗 Vehicle</p>
+                    <p className="text-sm font-bold text-white">
                       {claim.vehicle_data.year} {claim.vehicle_data.make} {claim.vehicle_data.model}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-white/80">
                       {claim.vehicle_data.license_plate}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100">
-                    <Shield className="h-5 w-5 text-gray-600" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/30 backdrop-blur">
+                    <Shield className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Insurance</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-white/90 font-semibold">🛡️ Insurance</p>
+                    <p className="text-sm font-bold text-white">
                       {claim.insurance_data.provider}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-white/80">
                       ${claim.insurance_data.deductible} deductible
                     </p>
                   </div>
@@ -273,21 +285,21 @@ export default function ClaimDetailsPage() {
               </div>
             </div>
 
-            {/* Incident Description */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Incident Description
+            {/* Incident Description - COLORFUL */}
+            <div className="bg-gradient-to-br from-indigo-100 to-purple-100 border-2 border-indigo-300 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-base font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                <span className="text-xl">📝</span> Incident Description
               </h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <p className="text-sm text-indigo-900 leading-relaxed">
                 {claim.incident_data.description}
               </p>
             </div>
 
-            {/* Damage Details */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            {/* Damage Details - COLORFUL */}
+            <div className="bg-gradient-to-br from-yellow-100 to-orange-100 border-2 border-orange-300 rounded-2xl p-6 shadow-lg">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-900">
-                  Damage Assessment
+                <h2 className="text-base font-bold text-orange-900 flex items-center gap-2">
+                  <span className="text-xl">⚠️</span> Damage Assessment
                 </h2>
                 <Badge
                   variant={
@@ -297,33 +309,33 @@ export default function ClaimDetailsPage() {
                       ? 'warning'
                       : 'secondary'
                   }
-                  className="text-xs"
+                  className="text-xs font-bold"
                 >
                   {claim.damage_data.severity}
                 </Badge>
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <p className="text-sm text-orange-900 leading-relaxed">
                 {claim.damage_data.description}
               </p>
             </div>
 
-            {/* Police Report */}
+            {/* Police Report - COLORFUL */}
             {claim.police_report?.filed && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                  Police Report
+              <div className="bg-gradient-to-br from-red-100 to-pink-100 border-2 border-red-300 rounded-2xl p-6 shadow-lg">
+                <h2 className="text-base font-bold text-red-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🚨</span> Police Report
                 </h2>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs text-gray-500">Report Number</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs text-red-700 font-semibold">Report Number</p>
+                    <p className="text-sm font-bold text-red-900">
                       {claim.police_report.report_number}
                     </p>
                   </div>
                   {claim.police_report.officer_name && (
                     <div>
-                      <p className="text-xs text-gray-500">Officer</p>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-xs text-red-700 font-semibold">Officer</p>
+                      <p className="text-sm font-bold text-red-900">
                         {claim.police_report.officer_name}
                       </p>
                     </div>
@@ -332,22 +344,10 @@ export default function ClaimDetailsPage() {
               </div>
             )}
 
-            {/* Processing Status */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">
-                Processing Status
-              </h2>
-              <ClaimProgressFlow
-                currentStep={currentStep}
-                estimatedPayout={estimatedPayout}
-                nextActions={nextActions}
-              />
-            </div>
-
-            {/* Documents */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-sm font-semibold text-gray-900 mb-4">
-                Documents & AI Analysis
+            {/* Documents - COLORFUL */}
+            <div className="bg-gradient-to-br from-cyan-100 to-blue-100 border-2 border-cyan-300 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-base font-bold text-cyan-900 mb-4 flex items-center gap-2">
+                <span className="text-xl">📄</span> Documents & AI Analysis
               </h2>
               <FileExtractionDisplay
                 files={[
