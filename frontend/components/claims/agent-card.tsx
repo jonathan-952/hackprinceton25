@@ -38,12 +38,45 @@ const STATUS_STYLES: Record<AgentStatus, { badge: string; color: string }> = {
   error: { badge: 'Error', color: 'destructive' },
 }
 
+const DEMO_DATA: Record<string, any> = {
+  core_agent: {
+    extracted_fields: 12,
+    confidence: 'high',
+    incident_date: '11/08/2025',
+    location: '675 Nassau St, Princeton, NJ',
+    vehicle: '2022 Honda Accord EX-L',
+  },
+  fintrack: {
+    damage_total: 4250,
+    deductible: 500,
+    payout: 3750,
+    confidence: 'high',
+    shops: [
+      { name: 'Princeton Auto Body', address: '123 Main St', rating: 4.8, price_estimate: 3900, turnaround_days: 5, distance_miles: 1.2 },
+      { name: 'Elite Collision Center', address: '456 Oak Ave', rating: 4.9, price_estimate: 4100, turnaround_days: 4, distance_miles: 2.5 },
+      { name: 'NJ Certified Repairs', address: '789 Elm St', rating: 4.7, price_estimate: 3850, turnaround_days: 6, distance_miles: 3.1 },
+    ]
+  },
+  drafting: {
+    pdf_url: '#',
+    pages: 8,
+    sections: ['Incident Details', 'Damage Assessment', 'Cost Breakdown', 'Legal Compliance', 'Supporting Evidence'],
+  },
+}
+
 export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
+  const [demoOutput, setDemoOutput] = useState<any>(null)
 
   const Icon = AGENT_ICONS[agent.id] || FileSearch
   const statusStyle = STATUS_STYLES[agent.status]
+  const displayOutput = demoOutput || agent.output
+
+  const handleRunDemo = () => {
+    setDemoOutput(DEMO_DATA[agent.id] || { message: 'Demo data generated successfully!' })
+    setIsExpanded(true)
+  }
 
   const handleRun = async () => {
     setIsRunning(true)
@@ -65,126 +98,110 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
   }
 
   const renderOutput = () => {
-    if (!agent.output) return null
+    if (!displayOutput) return null
 
     // Different rendering based on agent type
     switch (agent.id) {
       case 'fintrack':
         return (
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="font-medium">Damage Total:</div>
-              <div>${agent.output.damage_total?.toLocaleString() || '—'}</div>
-              <div className="font-medium">Deductible:</div>
-              <div>${agent.output.deductible?.toLocaleString() || '—'}</div>
-              <div className="font-medium text-green-600">Payout:</div>
-              <div className="font-bold text-green-600">
-                ${agent.output.payout?.toLocaleString() || '—'}
-              </div>
-              <div className="font-medium">Confidence:</div>
-              <div>
-                <Badge variant={agent.output.confidence === 'high' ? 'success' : 'warning'}>
-                  {agent.output.confidence || 'medium'}
-                </Badge>
-              </div>
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-4 text-white">
+              <p className="text-xs uppercase font-semibold opacity-90">Estimated Payout</p>
+              <p className="text-3xl font-bold">${displayOutput.payout?.toLocaleString()}</p>
+              <p className="text-xs opacity-75 mt-1">Damage: ${displayOutput.damage_total} - Deductible: ${displayOutput.deductible}</p>
             </div>
+
+            {displayOutput.shops && (
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-3">🔧 Top Repair Shops</p>
+                <div className="space-y-2">
+                  {displayOutput.shops.slice(0, 3).map((shop: any, index: number) => (
+                    <div key={index} className="border-2 border-gray-200 rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold text-sm text-gray-900">{shop.name}</h4>
+                          <p className="text-xs text-gray-600">{shop.address}</p>
+                        </div>
+                        <Badge className="bg-amber-500 text-white">⭐ {shop.rating}</Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                        <div>
+                          <span className="text-gray-500">Price</span>
+                          <p className="font-bold text-green-600">${shop.price_estimate}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Time</span>
+                          <p className="font-bold text-gray-900">{shop.turnaround_days}d</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Distance</span>
+                          <p className="font-bold text-blue-600">{shop.distance_miles}mi</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )
 
-      case 'repair_advisor':
+      case 'core_agent':
         return (
           <div className="space-y-3">
-            {agent.output.shops?.slice(0, 3).map((shop: any, index: number) => (
-              <div
-                key={index}
-                className="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-medium">{shop.name}</h4>
-                    <p className="text-xs text-gray-600">{shop.address}</p>
-                  </div>
-                  <Badge variant="info">⭐ {shop.rating}</Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <span className="text-gray-600">Price:</span>
-                    <br />
-                    <span className="font-medium">${shop.price_estimate}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Turnaround:</span>
-                    <br />
-                    <span className="font-medium">{shop.turnaround_days} days</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Distance:</span>
-                    <br />
-                    <span className="font-medium">{shop.distance_miles} mi</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-
-      case 'compliance':
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Ready to Submit:</span>
-              <Badge variant={agent.output.ready_to_submit ? 'success' : 'warning'}>
-                {agent.output.ready_to_submit ? 'Yes' : 'No'}
-              </Badge>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-bold text-blue-900">✓ Successfully Extracted Data</p>
+              <p className="text-xs text-blue-700 mt-1">{displayOutput.extracted_fields} key fields identified with high confidence</p>
             </div>
-
-            {agent.output.missing_fields?.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-red-600 mb-1">Missing Fields:</p>
-                <ul className="text-sm space-y-1">
-                  {agent.output.missing_fields.map((field: string, index: number) => (
-                    <li key={index} className="text-red-600">
-                      • {field}
-                    </li>
-                  ))}
-                </ul>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-500">Date</p>
+                <p className="font-bold text-gray-900">{displayOutput.incident_date}</p>
               </div>
-            )}
-
-            {agent.output.warnings?.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-yellow-600 mb-1">Warnings:</p>
-                <ul className="text-sm space-y-1">
-                  {agent.output.warnings.map((warning: string, index: number) => (
-                    <li key={index} className="text-yellow-600">
-                      ⚠ {warning}
-                    </li>
-                  ))}
-                </ul>
+              <div className="bg-white border rounded p-2">
+                <p className="text-gray-500">Location</p>
+                <p className="font-bold text-gray-900">{displayOutput.location}</p>
               </div>
-            )}
+              <div className="bg-white border rounded p-2 col-span-2">
+                <p className="text-gray-500">Vehicle</p>
+                <p className="font-bold text-gray-900">{displayOutput.vehicle}</p>
+              </div>
+            </div>
           </div>
         )
 
       case 'drafting':
         return (
-          <div className="space-y-2">
-            <p className="text-sm">Claim draft generated successfully!</p>
-            {agent.output.pdf_url && (
-              <Button size="sm" variant="outline" asChild>
-                <a href={agent.output.pdf_url} download>
-                  Download PDF
-                </a>
-              </Button>
+          <div className="space-y-3">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm font-bold text-green-900">✓ Professional Claim Document Generated</p>
+              <p className="text-xs text-green-700 mt-1">{displayOutput.pages} pages • Ready for submission</p>
+            </div>
+            {displayOutput.sections && (
+              <div>
+                <p className="text-xs font-semibold text-gray-700 mb-2">Included Sections:</p>
+                <div className="space-y-1">
+                  {displayOutput.sections.map((section: string, i: number) => (
+                    <div key={i} className="text-xs text-gray-600 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-green-500"></div>
+                      {section}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
+            <Button size="sm" variant="outline" className="w-full" asChild>
+              <a href={displayOutput.pdf_url || '#'} download>
+                📄 Download Claim PDF
+              </a>
+            </Button>
           </div>
         )
 
       default:
-        // Generic JSON display
         return (
           <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto">
-            {JSON.stringify(agent.output, null, 2)}
+            {JSON.stringify(displayOutput, null, 2)}
           </pre>
         )
     }
@@ -251,6 +268,15 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
             )}
           </Button>
 
+          {/* Demo Button */}
+          <Button
+            onClick={handleRunDemo}
+            variant="outline"
+            className="w-full border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+          >
+            ✨ Show Demo Example
+          </Button>
+
           {/* Error Display */}
           {agent.status === 'error' && agent.error && (
             <div className="bg-red-50 text-red-600 p-3 rounded text-sm">
@@ -259,7 +285,7 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
           )}
 
           {/* Output Section */}
-          {agent.status === 'complete' && agent.output && (
+          {(agent.status === 'complete' && agent.output) || displayOutput ? (
             <div>
               <Button
                 variant="ghost"
@@ -267,7 +293,7 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-full justify-between"
               >
-                <span className="font-medium">View Output</span>
+                <span className="font-medium">{demoOutput ? 'View Demo Output' : 'View Output'}</span>
                 {isExpanded ? (
                   <ChevronUp className="h-4 w-4" />
                 ) : (
@@ -281,7 +307,7 @@ export function AgentCard({ agent, onRun, disabled }: AgentCardProps) {
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </CardContent>
     </Card>

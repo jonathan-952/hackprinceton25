@@ -14,43 +14,36 @@ const CLAIM_STEPS = [
   {
     id: 1,
     name: 'Claim Submitted',
-    description: 'Your claim has been received',
+    description: 'Your claim has been received and is being processed',
+    bigAction: '✓ Upload complete',
     icon: CheckCircle2,
   },
   {
     id: 2,
-    name: 'Data Extraction',
-    description: 'AI analyzing your documents',
+    name: 'AI Document Analysis',
+    description: 'Extracting key data from your documents',
+    bigAction: 'Run ClaimPilot Core Agent',
     icon: Circle,
   },
   {
     id: 3,
-    name: 'Damage Assessment',
-    description: 'Calculating repair costs',
+    name: 'Cost Estimation & Shop Finder',
+    description: 'Calculating payout and finding best repair shops',
+    bigAction: 'Run FinTrack Agent',
     icon: Circle,
   },
   {
     id: 4,
-    name: 'Shop Recommendations',
-    description: 'Finding best repair options',
+    name: 'Professional Claim Document',
+    description: 'Generating legally-compliant PDF for submission',
+    bigAction: 'Run Drafting Agent',
     icon: Circle,
   },
   {
     id: 5,
-    name: 'Document Generation',
-    description: 'Creating formal claim',
-    icon: Circle,
-  },
-  {
-    id: 6,
-    name: 'Compliance Check',
-    description: 'Final validation',
-    icon: Circle,
-  },
-  {
-    id: 7,
     name: 'Ready to Submit',
-    description: 'Claim approved for filing',
+    description: 'Your claim is complete and ready to file',
+    bigAction: 'Submit to Insurance Company',
     icon: Circle,
   },
 ]
@@ -60,122 +53,52 @@ export function ClaimProgressFlow({
   estimatedPayout,
   nextActions = []
 }: ClaimProgressFlowProps) {
+  const nextStep = CLAIM_STEPS[currentStep] // Next step to do
+  const completedSteps = currentStep - 1
+
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-      <CardContent className="p-6">
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Claim Progress</h3>
-          <p className="text-sm text-gray-600">
-            Step {currentStep} of {CLAIM_STEPS.length} • {Math.round((currentStep / CLAIM_STEPS.length) * 100)}% Complete
-          </p>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-              style={{ width: `${(currentStep / CLAIM_STEPS.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Steps Flow */}
-        <div className="space-y-3 mb-6">
-          {CLAIM_STEPS.map((step, index) => {
-            const isComplete = index + 1 < currentStep
-            const isCurrent = index + 1 === currentStep
-            const isPending = index + 1 > currentStep
-            const Icon = step.icon
-
-            return (
-              <div key={step.id} className="flex items-start gap-3">
-                {/* Icon */}
-                <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                    isComplete
-                      ? 'bg-green-500 text-white'
-                      : isCurrent
-                      ? 'bg-blue-500 text-white animate-pulse'
-                      : 'bg-gray-200 text-gray-400'
-                  }`}
-                >
-                  {isComplete ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : isCurrent ? (
-                    <Clock className="h-5 w-5" />
-                  ) : (
-                    <Circle className="h-5 w-5" />
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p
-                      className={`text-sm font-semibold ${
-                        isComplete
-                          ? 'text-green-700'
-                          : isCurrent
-                          ? 'text-blue-700'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      {step.name}
-                    </p>
-                    {isComplete && (
-                      <Badge variant="success" className="text-xs">
-                        Done
-                      </Badge>
-                    )}
-                    {isCurrent && (
-                      <Badge variant="default" className="text-xs animate-pulse">
-                        In Progress
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-0.5">{step.description}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Estimated Payout */}
-        {estimatedPayout && (
-          <div className="bg-white rounded-lg p-4 border-2 border-green-200 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase">Estimated Payout</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
-                  ${estimatedPayout.toLocaleString()}
-                </p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+    <div className="space-y-4">
+      {/* BIG NEXT STEP HIGHLIGHT */}
+      {nextStep && (
+        <div className="bg-white rounded-xl p-6 border-2 border-blue-500 shadow-lg">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <Badge className="bg-blue-500 text-white mb-2">NEXT STEP</Badge>
+              <h3 className="text-xl font-bold text-gray-900">{nextStep.name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{nextStep.description}</p>
+            </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100">
+              <Clock className="h-7 w-7 text-blue-600 animate-pulse" />
             </div>
           </div>
-        )}
-
-        {/* Next Actions */}
-        {nextActions.length > 0 && (
-          <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-amber-900 mb-2">Next Steps:</p>
-                <ul className="space-y-1">
-                  {nextActions.map((action, index) => (
-                    <li key={index} className="text-sm text-amber-800 flex items-center gap-2">
-                      <ArrowRight className="h-3 w-3" />
-                      {action}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          <div className="bg-blue-50 rounded-lg p-4 mt-4">
+            <p className="text-sm font-bold text-blue-900">👉 {nextStep.bigAction}</p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {/* Progress Summary */}
+      <div className="bg-white/50 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-gray-700">Overall Progress</p>
+          <p className="text-sm font-bold text-gray-900">{completedSteps} / {CLAIM_STEPS.length} Complete</p>
+        </div>
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
+            style={{ width: `${(completedSteps / CLAIM_STEPS.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Estimated Payout */}
+      {estimatedPayout && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-5 text-white shadow-lg">
+          <p className="text-xs font-semibold uppercase opacity-90">Estimated Payout</p>
+          <p className="text-3xl font-bold mt-1">${estimatedPayout.toLocaleString()}</p>
+          <p className="text-xs mt-1 opacity-75">Based on damage assessment and historical data</p>
+        </div>
+      )}
+    </div>
   )
 }
