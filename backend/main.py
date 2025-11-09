@@ -5,7 +5,7 @@ Multi-agent orchestration system for insurance claim processing
 """
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List
 import base64
 from datetime import datetime
 import os
@@ -597,7 +597,7 @@ async def get_agent_status(claim_id: str):
 
 @app.post("/api/process-full-claim")
 async def process_full_claim(
-    files: list[UploadFile] = File(None),
+    files: Optional[List[UploadFile]] = File(None),
     claim_data: Optional[str] = Form(None)
 ):
     """
