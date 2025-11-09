@@ -1,14 +1,17 @@
 """
 ClaimPilot AI Orchestrator
 
-Coordinates between ClaimPilot, FinTrack, and ShopFinder agents
-to provide seamless multi-agent workflow.
+Coordinates between ClaimPilot, FinTrack, ShopFinder, ClaimDrafting,
+and ComplianceCheck agents to provide seamless multi-agent workflow.
 """
 import re
 from typing import Optional, Dict, List
+from datetime import datetime
 from agents.claimpilot_agent import claimpilot_agent
 from agents.fintrack_agent import fintrack_agent
 from agents.shopfinder_agent import shopfinder_agent
+from agents.claim_drafting_agent import claim_drafting_agent
+from agents.compliance_agent import compliance_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, FinancialEstimate,
     ShopRecommendations, AgentResponse
@@ -34,11 +37,16 @@ class ClaimPilotOrchestrator:
         self.agents = {
             "claimpilot": claimpilot_agent,
             "fintrack": fintrack_agent,
-            "shopfinder": shopfinder_agent
+            "shopfinder": shopfinder_agent,
+            "claim_drafting": claim_drafting_agent,
+            "compliance": compliance_agent
         }
 
         # Conversation history (in-memory, use database in production)
         self.conversation_history = []
+
+        # Agent status tracking per claim
+        self.agent_status = {}  # {claim_id: {agent_name: status}}
 
     def process_message(self, user_message: UserMessage) -> ChatResponse:
         """
@@ -485,6 +493,141 @@ class ClaimPilotOrchestrator:
     def clear_conversation(self):
         """Clear conversation history"""
         self.conversation_history = []
+
+    def get_agent_status(self, claim_id: str) -> Dict:
+        """
+        Get agent status for a claim
+
+        Args:
+            claim_id: Claim identifier
+
+        Returns:
+            Dictionary of agent statuses
+        """
+        if claim_id not in self.agent_status:
+            # Initialize default status
+            self.agent_status[claim_id] = {
+                "ClaimPilot": "Pending",
+                "FinTrack": "Pending",
+                "ClaimDrafting": "Pending",
+                "ComplianceCheck": "Pending"
+            }
+
+        return self.agent_status[claim_id]
+
+    def update_agent_status(self, claim_id: str, agent_name: str, status: str):
+        """
+        Update agent status for a claim
+
+        Args:
+            claim_id: Claim identifier
+            agent_name: Name of the agent
+            status: New status (Pending, In Progress, Complete, Error)
+        """
+        if claim_id not in self.agent_status:
+            self.agent_status[claim_id] = {}
+
+        self.agent_status[claim_id][agent_name] = status
+
+    def process_full_claim(self, user_message: UserMessage) -> ChatResponse:
+        """
+        Process a full claim workflow with all agents
+
+        Args:
+            user_message: UserMessage object
+
+        Returns:
+            ChatResponse with complete results
+        """
+        responses = []
+        claim = None
+        estimate = None
+        recommendations = None
+        draft_html = None
+        compliance_results = None
+
+        # Step 1: Process document with ClaimPilot
+        claim_result = claimpilot_agent.process_document(
+            file_data=user_message.file_data,
+            file_name=user_message.file_name
+        )
+
+        if not claim_result.success:
+            return ChatResponse(
+                message=f"I couldn't process the document: {claim_result.message}"
+            )
+
+        claim = Claim(**claim_result.data["claim"])
+        self.update_agent_status(claim.claim_id, "ClaimPilot", "Complete")
+        responses.append(f"✅ Claim processed: {claim.claim_id}")
+
+        # Step 2: Estimate damage with FinTrack
+        estimate_result = fintrack_agent.estimate_damage(claim)
+        if estimate_result.success:
+            estimate = FinancialEstimate(**estimate_result.data["estimate"])
+            self.update_agent_status(claim.claim_id, "FinTrack", "Complete")
+            responses.append(f"✅ Damage estimated: ${estimate.estimated_damage:,.2f}")
+
+        # Step 3: Find shops with ShopFinder
+        shops_result = shopfinder_agent.find_shops(claim)
+        if shops_result.success:
+            recommendations = ShopRecommendations(**shops_result.data["recommendations"])
+            responses.append(f"✅ Found {len(recommendations.recommended_shops)} repair shops")
+
+        # Step 4: Generate claim draft
+        draft_result = claim_drafting_agent.generate_draft(
+            claim,
+            estimate_result.data if estimate_result.success else None
+        )
+        if draft_result.success:
+            draft_html = draft_result.data["html_draft"]
+            self.update_agent_status(claim.claim_id, "ClaimDrafting", "Complete")
+            responses.append("✅ Claim draft generated")
+
+        # Step 5: Compliance check
+        compliance_result = compliance_agent.validate_claim(claim, draft_html)
+        if compliance_result.success:
+            compliance_results = compliance_result.data
+            self.update_agent_status(claim.claim_id, "ComplianceCheck", "Complete")
+            status_emoji = "✅" if compliance_results["submission_ready"] else "⚠️"
+            responses.append(f"{status_emoji} Compliance check complete")
+
+        # Create comprehensive response
+        message = "I've completed a full analysis of your claim!\n\n"
+        message += "\n".join(responses)
+        message += f"\n\n📋 **Claim Summary**\n{claim.summary}\n\n"
+
+        if estimate:
+            message += (
+                f"💰 **Financial Estimate**\n"
+                f"Total Damage: ${estimate.estimated_damage:,.2f}\n"
+                f"Insurance Pays: ${estimate.payout_after_deductible:,.2f}\n"
+                f"Your Deductible: ${estimate.deductible:,.2f}\n\n"
+            )
+
+        if recommendations and recommendations.recommended_shops:
+            top_shop = recommendations.recommended_shops[0]
+            message += (
+                f"🔧 **Top Recommended Shop**\n"
+                f"{top_shop.name} - ⭐ {top_shop.rating}/5.0\n"
+                f"Distance: {top_shop.distance} | Price: {top_shop.price_level}\n\n"
+            )
+
+        if compliance_results:
+            message += f"📊 **Compliance Status**\n{compliance_results['summary']}\n"
+
+        return ChatResponse(
+            message=message,
+            claim=claim,
+            financial_estimate=estimate,
+            shop_recommendations=recommendations,
+            data={
+                "agent_status": self.get_agent_status(claim.claim_id),
+                "compliance": compliance_results,
+                "draft_html": draft_html
+            },
+            agent_used="All Agents"
+        )
 
 
 # Singleton instance

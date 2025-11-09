@@ -13,6 +13,8 @@ from orchestrator.coordinator import orchestrator
 from agents.claimpilot_agent import claimpilot_agent
 from agents.fintrack_agent import fintrack_agent
 from agents.shopfinder_agent import shopfinder_agent
+from agents.claim_drafting_agent import claim_drafting_agent
+from agents.compliance_agent import compliance_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, ClaimStatus
 )
@@ -43,7 +45,7 @@ async def root():
         "name": "ClaimPilot AI",
         "version": "1.0.0",
         "description": "Multi-agent insurance claim processing system",
-        "agents": ["ClaimPilot", "FinTrack", "ShopFinder"],
+        "agents": ["ClaimPilot", "FinTrack", "ShopFinder", "ClaimDrafting", "ComplianceCheck"],
         "endpoints": {
             "chat": "/api/chat",
             "upload": "/api/upload",
@@ -62,7 +64,9 @@ async def health_check():
         "agents": {
             "claimpilot": "active",
             "fintrack": "active",
-            "shopfinder": "active"
+            "shopfinder": "active",
+            "claim_drafting": "active",
+            "compliance": "active"
         }
     }
 
@@ -398,6 +402,111 @@ async def clear_conversation():
     """
     orchestrator.clear_conversation()
     return {"message": "Conversation history cleared"}
+
+
+# ==================== Agent Status & Workflow Endpoints ====================
+
+@app.get("/api/claims/{claim_id}/agent-status")
+async def get_agent_status(claim_id: str):
+    """
+    Get agent status for a specific claim
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Agent status dictionary
+    """
+    status = orchestrator.get_agent_status(claim_id)
+    return {
+        "claim_id": claim_id,
+        "agent_status": status
+    }
+
+
+@app.post("/api/process-full-claim")
+async def process_full_claim(
+    file: UploadFile = File(...),
+    message: Optional[str] = Form(None)
+):
+    """
+    Process a full claim workflow with all agents
+
+    Args:
+        file: Uploaded document
+        message: Optional message
+
+    Returns:
+        Complete claim processing results
+    """
+    try:
+        # Read file content
+        content = await file.read()
+        encoded_content = base64.b64encode(content).decode('utf-8')
+
+        # Create user message
+        user_message = UserMessage(
+            message=message or "Process full claim workflow",
+            file_data=encoded_content,
+            file_name=file.filename
+        )
+
+        # Process with full workflow
+        response = orchestrator.process_full_claim(user_message)
+        return response
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing claim: {str(e)}")
+
+
+@app.post("/api/claims/{claim_id}/draft")
+async def generate_claim_draft(claim_id: str):
+    """
+    Generate claim draft document
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Claim draft HTML
+    """
+    claim = claimpilot_agent.get_claim(claim_id)
+    if not claim:
+        raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+    result = claim_drafting_agent.generate_draft(claim)
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.message)
+
+    orchestrator.update_agent_status(claim_id, "ClaimDrafting", "Complete")
+
+    return result.data
+
+
+@app.post("/api/claims/{claim_id}/compliance-check")
+async def run_compliance_check(claim_id: str):
+    """
+    Run compliance check on a claim
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Compliance check results
+    """
+    claim = claimpilot_agent.get_claim(claim_id)
+    if not claim:
+        raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+    result = compliance_agent.validate_claim(claim)
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.message)
+
+    orchestrator.update_agent_status(claim_id, "ComplianceCheck", "Complete")
+
+    return result.data
 
 
 # ==================== System Endpoints ====================
