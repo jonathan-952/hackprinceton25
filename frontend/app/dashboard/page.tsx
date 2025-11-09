@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Plus, ChevronRight, FileText } from 'lucide-react'
+import { StartClaimModal } from '@/components/claims/start-claim-modal'
 
 interface Claim {
   claim_id: string
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
+  const [showStartModal, setShowStartModal] = useState(false)
 
   useEffect(() => {
     fetchClaims()
@@ -100,7 +102,7 @@ export default function Dashboard() {
         {/* New Claim Button */}
         <div className="mb-8">
           <Button
-            onClick={() => router.push('/claims/new')}
+            onClick={() => setShowStartModal(true)}
             variant="gradient"
             size="lg"
             className="shadow-lg hover:shadow-xl"
@@ -205,7 +207,7 @@ export default function Dashboard() {
                   the process step by step.
                 </p>
                 <Button
-                  onClick={() => router.push('/claims/new')}
+                  onClick={() => setShowStartModal(true)}
                   variant="gradient"
                   size="lg"
                   className="shadow-lg hover:shadow-xl"
@@ -218,6 +220,20 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Start Claim Modal */}
+      <StartClaimModal
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        onSelectChatbot={() => {
+          setShowStartModal(false)
+          router.push('/')  // Go to homepage with chatbot
+        }}
+        onSelectForm={() => {
+          setShowStartModal(false)
+          router.push('/claims/new')  // Go to multi-step form
+        }}
+      />
     </div>
   )
 }
