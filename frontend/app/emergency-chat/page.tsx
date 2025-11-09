@@ -84,6 +84,7 @@ export default function EmergencyChatPage() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [demoIndex, setDemoIndex] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -151,7 +152,16 @@ export default function EmergencyChatPage() {
   }
 
   const loadDemoConversation = () => {
-    setMessages(DEMO_CONVERSATION)
+    // Progressive demo - show one more message each time button is clicked
+    if (demoIndex < DEMO_CONVERSATION.length) {
+      const nextMessages = DEMO_CONVERSATION.slice(0, demoIndex + 1)
+      setMessages(nextMessages)
+      setDemoIndex(demoIndex + 1)
+    } else {
+      // Reset demo if at the end
+      setMessages([DEMO_CONVERSATION[0]])
+      setDemoIndex(1)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -183,7 +193,7 @@ export default function EmergencyChatPage() {
                 variant="outline"
                 className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
               >
-                ✨ Demo
+                ✨ Demo {demoIndex > 0 && demoIndex <= DEMO_CONVERSATION.length ? `(${demoIndex}/${DEMO_CONVERSATION.length})` : ''}
               </Button>
               <Button
                 onClick={handleSaveAsClaim}

@@ -130,22 +130,22 @@ export default function Dashboard() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
+                              <h3 className="text-lg font-bold text-gray-900">
                                 {claim.incident_type}
                               </h3>
                               <Badge variant={getStatusColor(claim.status) as any}>
                                 {claim.status}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">{claim.summary}</p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <p className="text-sm text-gray-800 font-medium mb-3">{claim.summary}</p>
+                            <div className="flex items-center gap-4 text-sm text-gray-700 font-medium">
                               <span>{claim.date}</span>
                               <span>•</span>
                               <span>{claim.location}</span>
                               {claim.estimated_damage && (
                                 <>
                                   <span>•</span>
-                                  <span className="font-semibold text-green-600">
+                                  <span className="font-bold text-green-600">
                                     {claim.estimated_damage}
                                   </span>
                                 </>
@@ -172,15 +172,15 @@ export default function Dashboard() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
+                              <h3 className="text-lg font-bold text-gray-900">
                                 {claim.incident_type}
                               </h3>
                               <Badge variant={getStatusColor(claim.status) as any}>
                                 {claim.status}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">{claim.summary}</p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <p className="text-sm text-gray-800 font-medium mb-3">{claim.summary}</p>
+                            <div className="flex items-center gap-4 text-sm text-gray-700 font-medium">
                               <span>{claim.date}</span>
                               <span>•</span>
                               <span>{claim.location}</span>

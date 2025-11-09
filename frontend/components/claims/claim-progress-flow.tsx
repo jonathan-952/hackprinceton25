@@ -22,7 +22,7 @@ const CLAIM_STEPS = [
     id: 2,
     name: 'AI Document Analysis',
     description: 'Extracting key data from your documents',
-    bigAction: 'Please wait while we analyze your documents (2-3 minutes)',
+    bigAction: 'After we analyze your documents, we\'ll let you know if you should wait, call insurance, get a claims adjuster, or consult a lawyer',
     icon: Circle,
   },
   {
