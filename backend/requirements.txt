@@ -19,6 +19,9 @@ google-generativeai==0.8.5
 # Environment variables
 python-dotenv==1.0.0
 
+# Database
+supabase==2.10.0
+
 # Existing dependencies
 annotated-doc==0.0.3
 annotated-types==0.7.0
