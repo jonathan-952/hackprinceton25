@@ -18,11 +18,16 @@ supabase: Optional[Client] = None
 
 if SUPABASE_URL and SUPABASE_KEY:
     try:
+        # Create client with service_role key (bypasses RLS)
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         print("✅ Supabase client initialized successfully")
+        print(f"   URL: {SUPABASE_URL}")
+        print(f"   Key type: {'service_role' if 'service_role' in SUPABASE_KEY else 'anon'}")
     except Exception as e:
         print(f"⚠️ Failed to initialize Supabase client: {e}")
+        print(f"   Error type: {type(e).__name__}")
         print("Falling back to in-memory storage")
+        supabase = None
 else:
     print("⚠️ Supabase credentials not found. Using in-memory storage.")
 
