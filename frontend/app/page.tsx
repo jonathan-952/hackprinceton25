@@ -1,6 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { StartClaimModal } from '@/components/claims/start-claim-modal';
+import { useRouter } from 'next/navigation';
+
+export default function LandingPage() {
+  const router = useRouter();
+  const [showStartModal, setShowStartModal] = useState(false);
+
+
+import Link from 'next/link';
 
 export default function LandingPage() {
   return (
@@ -45,6 +55,12 @@ export default function LandingPage() {
               Let our AI agents handle the complexity while you focus on what matters.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
+              <button
+                onClick={() => setShowStartModal(true)}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                Start Your Claim
+              </button>
               <Link
                 href="/dashboard"
                 className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
@@ -158,6 +174,12 @@ export default function LandingPage() {
             <p className="mt-4 text-lg text-blue-100">
               Start your claim now and experience the future of insurance processing.
             </p>
+            <button
+              onClick={() => setShowStartModal(true)}
+              className="mt-8 inline-block rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-600 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              Start Your Claim
+            </button>
             <Link
               href="/dashboard"
               className="mt-8 inline-block rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-600 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
@@ -176,6 +198,20 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+
+      {/* Start Claim Modal */}
+      <StartClaimModal
+        isOpen={showStartModal}
+        onClose={() => setShowStartModal(false)}
+        onSelectChatbot={() => {
+          setShowStartModal(false)
+          router.push('/emergency-chat')  // Go to emergency chatbot
+        }}
+        onSelectForm={() => {
+          setShowStartModal(false)
+          router.push('/claims/new')  // Go to multi-step form
+        }}
+      />
     </div>
   );
 }

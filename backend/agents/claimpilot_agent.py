@@ -13,6 +13,12 @@ from datetime import datetime
 from typing import Dict, Optional, List
 from utils.data_models import Claim, ClaimStatus, Party, AgentResponse
 from utils.pdf_parser import pdf_parser
+from utils.supabase_client import (
+    save_claim_to_db,
+    get_claim_from_db,
+    list_claims_from_db,
+    update_claim_in_db
+)
 from config.database import supabase_client
 
 
@@ -26,6 +32,7 @@ class ClaimPilotAgent:
     def __init__(self):
         self.name = "ClaimPilot"
         self.version = "1.0.0"
+        self.claims_database = {}  # In-memory storage (replace with real DB in production)
         self.db = supabase_client
 
     def process_document(
@@ -64,6 +71,15 @@ class ClaimPilotAgent:
 
             # Create claim
             claim = self._create_claim(text, extracted_data)
+
+            # Store claim in memory
+            self.claims_database[claim.claim_id] = claim
+
+            # Save to Supabase database
+            save_claim_to_db(claim.model_dump())
+
+            # Generate summary
+            summary = self._generate_summary(claim)
 
             # Generate summary
             summary = self._generate_summary(claim)
@@ -178,6 +194,7 @@ class ClaimPilotAgent:
 
     def _generate_summary(self, claim: Claim) -> str:
         """
+        Generate natural language summary of the claim
         Generate natural language summary of the claim using MCP AI summarization
 
         Args:
@@ -186,6 +203,7 @@ class ClaimPilotAgent:
         Returns:
             Natural language summary
         """
+        # Create a conversational summary
         try:
             # Use MCP summarize_claim tool with the raw text
             from utils.mcp_tools import summarize_claim
@@ -255,6 +273,16 @@ class ClaimPilotAgent:
             f"and is currently in {claim.status.value} status."
         )
 
+        summary = " ".join(summary_parts)
+
+        # Update claim with summary
+        claim.summary = summary
+
+        return summary
+
+    def get_claim(self, claim_id: str) -> Optional[Claim]:
+        """
+        Retrieve a claim by ID from Supabase or in-memory storage
         return " ".join(summary_parts)
 
     def _save_claim_to_db(self, claim: Claim) -> None:
@@ -307,6 +335,38 @@ class ClaimPilotAgent:
         Returns:
             Claim object or None
         """
+        # Try Supabase first
+        db_claim = get_claim_from_db(claim_id)
+        if db_claim:
+            # Convert database format to Claim object
+            try:
+                claim_data = {
+                    'claim_id': db_claim['claim_id'],
+                    'incident_type': db_claim['incident_data'].get('type', 'Unknown'),
+                    'date': db_claim['incident_data'].get('date', ''),
+                    'location': db_claim['incident_data'].get('location', ''),
+                    'parties_involved': [],
+                    'damages_description': db_claim['damage_data'].get('description', ''),
+                    'estimated_damage': db_claim['damage_data'].get('estimated_damage', ''),
+                    'confidence': 0.8,
+                    'status': ClaimStatus(db_claim['status']) if db_claim['status'] in ['Open', 'Processing', 'Closed', 'Pending Info'] else ClaimStatus.OPEN,
+                    'summary': db_claim['incident_data'].get('description', ''),
+                    'created_at': db_claim.get('created_at', datetime.now().isoformat()),
+                    'updated_at': db_claim.get('updated_at', datetime.now().isoformat())
+                }
+                claim = Claim(**claim_data)
+                # Cache in memory
+                self.claims_database[claim_id] = claim
+                return claim
+            except Exception as e:
+                print(f"Error converting DB claim to Claim object: {e}")
+
+        # Fall back to in-memory
+        return self.claims_database.get(claim_id)
+
+    def update_claim_status(self, claim_id: str, status: ClaimStatus) -> AgentResponse:
+        """
+        Update the status of a claim
         try:
             result = self.db.table('claims').select('*').eq('claim_id', claim_id).execute()
 
@@ -338,6 +398,19 @@ class ClaimPilotAgent:
                 message=f"Claim {claim_id} not found"
             )
 
+        claim.status = status
+        claim.updated_at = datetime.now().isoformat()
+
+        return AgentResponse(
+            agent_name=self.name,
+            success=True,
+            data={"claim": claim.model_dump()},
+            message=f"Claim {claim_id} status updated to {status.value}"
+        )
+
+    def list_claims(self, status: Optional[ClaimStatus] = None) -> List[Claim]:
+        """
+        List all claims from Supabase or in-memory storage, optionally filtered by status
         try:
             # Update in database
             self.db.table('claims').update({
@@ -373,6 +446,42 @@ class ClaimPilotAgent:
         Returns:
             List of claims
         """
+        # Try Supabase first
+        db_claims = list_claims_from_db(status.value if status else None)
+        if db_claims:
+            claims = []
+            for db_claim in db_claims:
+                try:
+                    claim_data = {
+                        'claim_id': db_claim['claim_id'],
+                        'incident_type': db_claim['incident_data'].get('type', 'Unknown'),
+                        'date': db_claim['incident_data'].get('date', ''),
+                        'location': db_claim['incident_data'].get('location', ''),
+                        'parties_involved': [],
+                        'damages_description': db_claim['damage_data'].get('description', ''),
+                        'estimated_damage': db_claim['damage_data'].get('estimated_damage', ''),
+                        'confidence': 0.8,
+                        'status': ClaimStatus(db_claim['status']) if db_claim['status'] in ['Open', 'Processing', 'Closed', 'Pending Info'] else ClaimStatus.OPEN,
+                        'summary': db_claim['incident_data'].get('description', ''),
+                        'created_at': db_claim.get('created_at', datetime.now().isoformat()),
+                        'updated_at': db_claim.get('updated_at', datetime.now().isoformat())
+                    }
+                    claims.append(Claim(**claim_data))
+                except Exception as e:
+                    print(f"Error converting DB claim: {e}")
+                    continue
+            return claims
+
+        # Fall back to in-memory
+        claims = list(self.claims_database.values())
+
+        if status:
+            claims = [c for c in claims if c.status == status]
+
+        # Sort by created_at (newest first)
+        claims.sort(key=lambda x: x.created_at, reverse=True)
+
+        return claims
         try:
             query = self.db.table('claims').select('*')
 
