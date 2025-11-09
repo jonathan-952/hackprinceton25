@@ -153,13 +153,17 @@ export default function ClaimDetailsPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white shadow-sm">
+      {/* Header - Apple Style */}
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/dashboard">
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+                >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               </Link>
@@ -175,12 +179,19 @@ export default function ClaimDetailsPage() {
                 <p className="text-sm text-gray-500 mt-1">Claim #{claim.claim_id}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-300 hover:bg-gray-50 text-gray-700"
+              >
                 <FileText className="mr-2 h-4 w-4" />
                 Download Report
               </Button>
-              <Button variant="gradient" size="sm">
+              <Button
+                size="sm"
+                className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm"
+              >
                 Submit Claim
               </Button>
             </div>
