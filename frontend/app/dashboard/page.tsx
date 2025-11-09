@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [mcpSummary, setMcpSummary] = useState<string | null>(null);
+  const [emailTemplate, setEmailTemplate] = useState<any>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [useGemini, setUseGemini] = useState(false);
 
@@ -95,8 +96,9 @@ export default function Dashboard() {
           }
         }
 
-        // Fallback: just show summary
+        // Fallback: just show summary and email template
         setMcpSummary(data.summary);
+        setEmailTemplate(data.email_template || null);
         setShowSummary(true);
         setShowUpload(false);
         setFiles([]);
@@ -283,7 +285,7 @@ export default function Dashboard() {
 
               <div className="bg-blue-50 rounded-xl p-6 mb-6">
                 <div className="flex items-start gap-3">
-                  <svg className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-6 w-6 text-blue-600 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
@@ -293,11 +295,73 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Email Template Section */}
+              {emailTemplate && !emailTemplate.error && (
+                <div className="bg-green-50 rounded-xl p-6 mb-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <svg className="h-6 w-6 text-green-600 shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-2">Insurance Email Template</h3>
+                      <p className="text-sm text-gray-600 mb-4">Auto-generated email ready to send to your insurance company</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-xs font-medium text-gray-500 mb-1">Subject</div>
+                      <div className="text-sm text-gray-900">{emailTemplate.subject}</div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-xs font-medium text-gray-500 mb-1">To</div>
+                      <div className="text-sm text-gray-900">{emailTemplate.to}</div>
+                    </div>
+
+                    {emailTemplate.cc && (
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="text-xs font-medium text-gray-500 mb-1">CC</div>
+                        <div className="text-sm text-gray-900">{emailTemplate.cc}</div>
+                      </div>
+                    )}
+
+                    <div className="bg-white rounded-lg p-4">
+                      <div className="text-xs font-medium text-gray-500 mb-2">Email Body</div>
+                      <div className="text-sm text-gray-900 whitespace-pre-wrap font-mono">{emailTemplate.body}</div>
+                    </div>
+
+                    {emailTemplate.attachments_note && (
+                      <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                        <div className="text-xs font-medium text-yellow-800 mb-1">Attachments</div>
+                        <div className="text-sm text-yellow-700">{emailTemplate.attachments_note}</div>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `Subject: ${emailTemplate.subject}\n\nTo: ${emailTemplate.to}\n\n${emailTemplate.body}`
+                        );
+                        alert('Email template copied to clipboard!');
+                      }}
+                      className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy Email to Clipboard
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={() => {
                     setShowSummary(false);
                     setMcpSummary(null);
+                    setEmailTemplate(null);
                   }}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >

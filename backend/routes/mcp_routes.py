@@ -31,6 +31,7 @@ extract_structured_data: Optional[Callable[[str, bool], str]] = None
 estimate_damage: Optional[Callable[..., str]] = None
 find_repair_shops: Optional[Callable[..., str]] = None
 validate_claim_compliance: Optional[Callable[[str, bool], str]] = None
+generate_insurance_email: Optional[Callable[[str, Optional[str], bool], str]] = None
 
 try:
     from comprehensive_mcp import (
@@ -40,7 +41,8 @@ try:
         extract_structured_data as _extract_data,
         estimate_damage as _estimate_damage,
         find_repair_shops as _find_shops,
-        validate_claim_compliance as _validate_compliance
+        validate_claim_compliance as _validate_compliance,
+        generate_insurance_email as _generate_email
     )
     parse_pdf = _parse_pdf
     summarize_claim_openai = _summarize_openai
@@ -49,6 +51,7 @@ try:
     estimate_damage = _estimate_damage
     find_repair_shops = _find_shops
     validate_claim_compliance = _validate_compliance
+    generate_insurance_email = _generate_email
     MCP_AVAILABLE = True
 except Exception as e:
     print(f"Warning: Could not import comprehensive MCP: {e}")
@@ -140,7 +143,8 @@ async def process_document_with_mcp(
             }
 
             # Step 3: Extract structured data if requested
-            if extract_data and MCP_AVAILABLE:
+            structured_data = None
+            if extract_data and MCP_AVAILABLE and extract_structured_data:
                 print("Extracting structured data...")
                 structured_data_str = extract_structured_data(parsed_text, use_gemini=use_gemini)
                 try:
@@ -148,6 +152,20 @@ async def process_document_with_mcp(
                     result["structured_data"] = structured_data
                 except:
                     result["structured_data"] = {"raw": structured_data_str}
+
+            # Step 4: Generate insurance email template
+            if MCP_AVAILABLE and generate_insurance_email:
+                print("Generating insurance email template...")
+                email_str = generate_insurance_email(
+                    claim_summary=summary,
+                    claim_data=json.dumps(structured_data) if structured_data else None,
+                    use_gemini=use_gemini
+                )
+                try:
+                    email_template = json.loads(email_str)
+                    result["email_template"] = email_template
+                except:
+                    result["email_template"] = {"raw": email_str}
 
             return result
 
@@ -184,6 +202,7 @@ async def mcp_health_check():
             "estimate_damage",
             "find_repair_shops",
             "validate_claim_compliance",
+            "generate_insurance_email",
             "multi_file_context"
         ] if MCP_AVAILABLE else ["parse_pdf", "summarize_claim"]
 
