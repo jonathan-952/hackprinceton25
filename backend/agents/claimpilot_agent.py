@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Dict, Optional, List
 from utils.data_models import Claim, ClaimStatus, Party, AgentResponse
 from utils.pdf_parser import pdf_parser
+from config.database import supabase_client
 
 
 class ClaimPilotAgent:
@@ -25,7 +26,7 @@ class ClaimPilotAgent:
     def __init__(self):
         self.name = "ClaimPilot"
         self.version = "1.0.0"
-        self.claims_database = {}  # In-memory storage (replace with real DB in production)
+        self.db = supabase_client
 
     def process_document(
         self,
@@ -64,11 +65,11 @@ class ClaimPilotAgent:
             # Create claim
             claim = self._create_claim(text, extracted_data)
 
-            # Store claim
-            self.claims_database[claim.claim_id] = claim
-
             # Generate summary
             summary = self._generate_summary(claim)
+
+            # Store claim in database
+            self._save_claim_to_db(claim)
 
             return AgentResponse(
                 agent_name=self.name,
@@ -223,9 +224,49 @@ class ClaimPilotAgent:
 
         return summary
 
+    def _save_claim_to_db(self, claim: Claim) -> None:
+        """
+        Save claim to Supabase database
+
+        Args:
+            claim: Claim object to save
+        """
+        try:
+            claim_data = {
+                "claim_id": claim.claim_id,
+                "claim_number": claim.claim_id,  # Using claim_id as claim_number
+                "incident_type": claim.incident_type,
+                "incident_date": claim.date,
+                "incident_location": claim.location,
+                "description": claim.damages_description,
+                "status": claim.status.value,
+                "estimated_amount": self._extract_amount_from_string(claim.estimated_damage) if claim.estimated_damage else None,
+                "claimant_name": claim.parties_involved[0].name if claim.parties_involved else None,
+                "claimant_contact": claim.parties_involved[0].contact if claim.parties_involved and claim.parties_involved[0].contact else None,
+                "items_damaged": [{"description": claim.damages_description}],
+                "supporting_documents": [],
+                "created_at": claim.created_at,
+                "updated_at": claim.updated_at
+            }
+
+            # Insert or update claim
+            result = self.db.table('claims').upsert(claim_data, on_conflict='claim_id').execute()
+
+        except Exception as e:
+            print(f"Error saving claim to database: {str(e)}")
+            # Don't fail the entire operation if DB save fails
+            pass
+
+    def _extract_amount_from_string(self, amount_str: str) -> Optional[float]:
+        """Extract numeric amount from string like '$1,234.56'"""
+        try:
+            return float(amount_str.replace('$', '').replace(',', ''))
+        except (ValueError, AttributeError):
+            return None
+
     def get_claim(self, claim_id: str) -> Optional[Claim]:
         """
-        Retrieve a claim by ID
+        Retrieve a claim by ID from database
 
         Args:
             claim_id: Claim identifier
@@ -233,11 +274,20 @@ class ClaimPilotAgent:
         Returns:
             Claim object or None
         """
-        return self.claims_database.get(claim_id)
+        try:
+            result = self.db.table('claims').select('*').eq('claim_id', claim_id).execute()
+
+            if result.data and len(result.data) > 0:
+                return self._claim_from_db(result.data[0])
+            return None
+
+        except Exception as e:
+            print(f"Error retrieving claim {claim_id}: {str(e)}")
+            return None
 
     def update_claim_status(self, claim_id: str, status: ClaimStatus) -> AgentResponse:
         """
-        Update the status of a claim
+        Update the status of a claim in database
 
         Args:
             claim_id: Claim identifier
@@ -255,19 +305,34 @@ class ClaimPilotAgent:
                 message=f"Claim {claim_id} not found"
             )
 
-        claim.status = status
-        claim.updated_at = datetime.now().isoformat()
+        try:
+            # Update in database
+            self.db.table('claims').update({
+                'status': status.value,
+                'updated_at': datetime.now().isoformat()
+            }).eq('claim_id', claim_id).execute()
 
-        return AgentResponse(
-            agent_name=self.name,
-            success=True,
-            data={"claim": claim.model_dump()},
-            message=f"Claim {claim_id} status updated to {status.value}"
-        )
+            claim.status = status
+            claim.updated_at = datetime.now().isoformat()
+
+            return AgentResponse(
+                agent_name=self.name,
+                success=True,
+                data={"claim": claim.model_dump()},
+                message=f"Claim {claim_id} status updated to {status.value}"
+            )
+
+        except Exception as e:
+            return AgentResponse(
+                agent_name=self.name,
+                success=False,
+                data={},
+                message=f"Error updating claim status: {str(e)}"
+            )
 
     def list_claims(self, status: Optional[ClaimStatus] = None) -> List[Claim]:
         """
-        List all claims, optionally filtered by status
+        List all claims from database, optionally filtered by status
 
         Args:
             status: Filter by status (optional)
@@ -275,15 +340,60 @@ class ClaimPilotAgent:
         Returns:
             List of claims
         """
-        claims = list(self.claims_database.values())
+        try:
+            query = self.db.table('claims').select('*')
 
-        if status:
-            claims = [c for c in claims if c.status == status]
+            if status:
+                query = query.eq('status', status.value)
 
-        # Sort by created_at (newest first)
-        claims.sort(key=lambda x: x.created_at, reverse=True)
+            result = query.order('created_at', desc=True).execute()
 
-        return claims
+            claims = [self._claim_from_db(claim_data) for claim_data in result.data]
+            return claims
+
+        except Exception as e:
+            print(f"Error listing claims: {str(e)}")
+            return []
+
+    def _claim_from_db(self, db_data: Dict) -> Claim:
+        """
+        Convert database row to Claim object
+
+        Args:
+            db_data: Database row data
+
+        Returns:
+            Claim object
+        """
+        # Convert parties data
+        parties = []
+        if db_data.get('claimant_name'):
+            parties.append(Party(
+                name=db_data['claimant_name'],
+                role="Claimant",
+                contact=db_data.get('claimant_contact')
+            ))
+
+        # Convert estimated amount
+        estimated_damage = None
+        if db_data.get('estimated_amount'):
+            estimated_damage = f"${db_data['estimated_amount']:,.2f}"
+
+        return Claim(
+            claim_id=db_data['claim_id'],
+            incident_type=db_data.get('incident_type', 'Other'),
+            date=str(db_data.get('incident_date', datetime.now().strftime("%Y-%m-%d"))),
+            location=db_data.get('incident_location', 'Location not specified'),
+            parties_involved=parties,
+            damages_description=db_data.get('description', 'No description'),
+            estimated_damage=estimated_damage,
+            confidence=0.8,  # Default confidence for DB records
+            status=ClaimStatus(db_data.get('status', 'Processing')),
+            summary=db_data.get('description', ''),
+            raw_text="",
+            created_at=str(db_data.get('created_at', datetime.now().isoformat())),
+            updated_at=str(db_data.get('updated_at', datetime.now().isoformat()))
+        )
 
     def analyze_claim(self, claim_id: str) -> AgentResponse:
         """
