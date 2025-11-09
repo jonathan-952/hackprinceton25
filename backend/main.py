@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import base64
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
 
 from orchestrator.coordinator import orchestrator
 from agents.claimpilot_agent import claimpilot_agent
@@ -18,6 +21,17 @@ from agents.compliance_agent import compliance_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, ClaimStatus
 )
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Gemini
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+else:
+    print("Warning: GEMINI_API_KEY not set. Chat functionality will be limited.")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -73,21 +87,123 @@ async def health_check():
 
 # ==================== Chat & Processing Endpoints ====================
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat(user_message: UserMessage):
+@app.post("/api/chat")
+async def chat(request: dict):
     """
-    Main chat endpoint - processes user messages and coordinates agents
+    Gemini-powered chat endpoint with claim context awareness
 
     Args:
-        user_message: UserMessage with text, optional file data, and context
+        request: Dict with claim_id, message, and context
 
     Returns:
-        ChatResponse with agent results
+        Chat response with agent actions
     """
     try:
-        response = orchestrator.process_message(user_message)
-        return response
+        claim_id = request.get('claim_id')
+        message = request.get('message', '')
+        context = request.get('context', {})
+
+        # Get claim data
+        claim = None
+        if claim_id:
+            claim = claimpilot_agent.get_claim(claim_id)
+
+        # Build system prompt
+        claim_data = claim.model_dump() if claim else {}
+        agent_outputs = context.get('agent_outputs', {})
+
+        system_prompt = f"""You are ClaimPilot AI, a professional insurance claims assistant. You have access to the following claim data:
+
+{claim_data}
+
+Agent Outputs:
+{agent_outputs}
+
+Your capabilities:
+1. Answer questions about the claim naturally and conversationally
+2. Update claim fields when requested (respond with JSON in format {{"action": "update_claim", "fields": {{}}}})
+3. Trigger orchestrator agents when asked (respond with JSON in format {{"action": "trigger_agent", "agent": "agent_name"}})
+4. Explain insurance concepts, payout calculations, and next steps
+
+Tone: Professional, calm, empathetic, helpful
+Format: Conversational responses, not bullet points unless listing options
+
+When the user asks you to:
+- Update claim information: Respond with action JSON at the end of your message
+- Run an agent: Respond with agent trigger JSON at the end of your message
+- Answer questions: Provide natural, helpful responses based on the claim data"""
+
+        # Create chat with Gemini
+        if GEMINI_API_KEY:
+            conversation_history = context.get('conversation_history', [])
+
+            # Build chat history for Gemini
+            history = [
+                {
+                    'role': 'user',
+                    'parts': [{'text': system_prompt}]
+                },
+                {
+                    'role': 'model',
+                    'parts': [{'text': "I understand. I'm ready to assist with this insurance claim. How can I help you today?"}]
+                }
+            ]
+
+            # Add conversation history
+            for msg in conversation_history:
+                history.append({
+                    'role': 'user' if msg['role'] == 'user' else 'model',
+                    'parts': [{'text': msg['content']}]
+                })
+
+            # Send message to Gemini
+            chat = gemini_model.start_chat(history=history)
+            response = chat.send_message(message)
+            response_text = response.text
+
+            # Parse actions from response
+            actions = []
+            import re
+            json_pattern = r'\{[^}]*"action":\s*"([^"]+)"[^}]*\}'
+            matches = re.finditer(json_pattern, response_text)
+
+            for match in matches:
+                try:
+                    import json
+                    action_data = json.loads(match.group(0))
+                    if action_data.get('action') == 'update_claim':
+                        actions.append({
+                            'type': 'update_claim',
+                            'payload': action_data.get('fields', {})
+                        })
+                    elif action_data.get('action') == 'trigger_agent':
+                        actions.append({
+                            'type': 'trigger_agent',
+                            'payload': {'agent': action_data.get('agent')}
+                        })
+                except:
+                    pass
+
+            # Clean response (remove JSON blocks)
+            clean_response = re.sub(json_pattern, '', response_text).strip()
+
+            return {
+                'response': clean_response,
+                'actions': actions,
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            # Fallback to orchestrator if Gemini not configured
+            user_message = UserMessage(message=message, claim_id=claim_id)
+            response = orchestrator.process_message(user_message)
+            return {
+                'response': response.message if hasattr(response, 'message') else str(response),
+                'actions': [],
+                'timestamp': datetime.now().isoformat()
+            }
+
     except Exception as e:
+        print(f"Chat error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
