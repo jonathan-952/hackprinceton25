@@ -149,14 +149,14 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header - Apple Style */}
-      <div className="border-b border-gray-200 p-4 bg-white/80 backdrop-blur-sm">
-        <h3 className="font-semibold text-lg text-gray-900">ClaimPilot Chat Assistant</h3>
-        <p className="text-sm text-gray-600">Ask questions, update claim details, or trigger agents</p>
+      {/* Header - Colorful & Vibrant */}
+      <div className="border-b-2 border-blue-200 p-4 bg-gradient-to-r from-blue-500 to-indigo-600">
+        <h3 className="font-bold text-lg text-white">💬 ClaimPilot Chat Assistant</h3>
+        <p className="text-sm text-blue-100">Ask questions, update claim details, or trigger agents</p>
       </div>
 
-      {/* Messages - Apple Style */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      {/* Messages - Colorful Background */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -165,8 +165,8 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                 message.role === 'user'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'bg-white text-gray-900 border-2 border-indigo-200 shadow-md'
               }`}
             >
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
@@ -187,10 +187,10 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm">
+            <div className="bg-white border-2 border-indigo-300 rounded-2xl px-4 py-3 shadow-lg">
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                <span className="text-sm text-gray-700">ClaimPilot is thinking...</span>
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                <span className="text-sm text-indigo-700 font-medium">ClaimPilot is thinking...</span>
               </div>
             </div>
           </div>
@@ -199,8 +199,8 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input - Apple Style */}
-      <div className="border-t border-gray-200 p-4 bg-white">
+      {/* Input - Colorful */}
+      <div className="border-t-2 border-blue-200 p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex gap-3">
           <Textarea
             ref={textareaRef}
@@ -208,14 +208,14 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="min-h-[60px] resize-none"
+            className="min-h-[60px] resize-none border-2 border-blue-300 focus-visible:ring-2 focus-visible:ring-blue-500"
             disabled={isLoading}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             size="icon"
-            className="h-[60px] w-[60px] bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow-sm"
+            className="h-[60px] w-[60px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl shadow-lg"
           >
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -224,7 +224,7 @@ export function ChatPanel({ claim, onAgentTrigger, onClaimUpdate }: ChatPanelPro
             )}
           </Button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-blue-700 font-medium mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>

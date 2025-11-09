@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import { AgentCard } from './agent-card'
 import { Agent, AgentType } from '@/types/agent'
 import { Claim } from '@/types/claim'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface OrchestratorPanelProps {
   claim: Claim
@@ -33,17 +32,10 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
       {
         id: 'fintrack',
         name: 'FinTrack',
-        description: 'Estimates repair costs and calculates your expected payout based on damage severity, vehicle make/model, and historical claim data. Helps you know if settlement offers are fair.',
+        description: 'Estimates repair costs and calculates your expected payout based on damage severity, vehicle make/model, and historical claim data. Also finds nearby certified repair shops with the highest ratings and lowest prices to help you save money.',
         status: orchestratorState.fintrack?.status || 'idle',
         output: orchestratorState.fintrack?.data,
         dependencies: ['core_agent'],
-      },
-      {
-        id: 'repair_advisor',
-        name: 'Repair Advisor',
-        description: 'Finds nearby certified repair shops, compares their ratings and pricing, and recommends the best options based on your vehicle type and damage. Includes real customer reviews and estimated wait times.',
-        status: orchestratorState.repair_advisor?.status || 'idle',
-        output: orchestratorState.repair_advisor?.data,
       },
       {
         id: 'drafting',
@@ -52,13 +44,6 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
         status: orchestratorState.drafting?.status || 'idle',
         output: orchestratorState.drafting?.data,
         dependencies: ['core_agent', 'fintrack'],
-      },
-      {
-        id: 'compliance',
-        name: 'Compliance & Submission',
-        description: 'Checks your claim for completeness, verifies all required documents are included, and ensures compliance with state laws and insurance requirements before final submission.',
-        status: orchestratorState.compliance?.status || 'idle',
-        output: orchestratorState.compliance?.data,
       },
     ]
 
@@ -159,10 +144,6 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
     }
   }
 
-  const coreAgents = agents.filter((a) => ['core_agent', 'fintrack'].includes(a.id))
-  const advisoryAgents = agents.filter((a) => ['repair_advisor', 'drafting'].includes(a.id))
-  const complianceAgents = agents.filter((a) => a.id === 'compliance')
-
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4 border-b">
@@ -172,54 +153,15 @@ export function OrchestratorPanel({ claim, onAgentComplete }: OrchestratorPanelP
         </p>
       </div>
 
-      <Tabs defaultValue="all" className="p-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Agents</TabsTrigger>
-          <TabsTrigger value="core">Core</TabsTrigger>
-          <TabsTrigger value="advisory">Advisory</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="space-y-4 mt-4">
-          {agents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onRun={() => runAgent(agent.id)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="core" className="space-y-4 mt-4">
-          {coreAgents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onRun={() => runAgent(agent.id)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="advisory" className="space-y-4 mt-4">
-          {advisoryAgents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onRun={() => runAgent(agent.id)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="compliance" className="space-y-4 mt-4">
-          {complianceAgents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onRun={() => runAgent(agent.id)}
-            />
-          ))}
-        </TabsContent>
-      </Tabs>
+      <div className="p-4 space-y-4">
+        {agents.map((agent) => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            onRun={() => runAgent(agent.id)}
+          />
+        ))}
+      </div>
     </div>
   )
 }

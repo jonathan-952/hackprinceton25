@@ -89,32 +89,11 @@ export function FileExtractionDisplay({
                   key={index}
                   className="bg-white rounded-lg p-3 border border-purple-200"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-                        {item.field}
-                      </p>
-                      <p className="text-sm font-semibold text-gray-900">{item.value}</p>
-                    </div>
-                    <div className="ml-3">
-                      <div className="flex items-center gap-1">
-                        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all ${
-                              item.confidence >= 90
-                                ? 'bg-green-500'
-                                : item.confidence >= 70
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                            }`}
-                            style={{ width: `${item.confidence}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium text-gray-600">
-                          {item.confidence}%
-                        </span>
-                      </div>
-                    </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-1">
+                      {item.field}
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900">{item.value}</p>
                   </div>
                 </div>
               ))}
@@ -122,13 +101,8 @@ export function FileExtractionDisplay({
 
             <div className="mt-4 p-3 bg-purple-100 rounded-lg">
               <p className="text-xs text-purple-800">
-                <strong>AI Confidence:</strong> Our AI extracted {extractedData.length} key data points
-                from your documents with an average confidence of{' '}
-                {Math.round(
-                  extractedData.reduce((sum, item) => sum + item.confidence, 0) /
-                    extractedData.length
-                )}
-                %. All data has been verified and is ready for submission.
+                <strong>AI Extracted:</strong> Our AI extracted {extractedData.length} key data points
+                from your documents. All data has been verified and is ready for submission.
               </p>
             </div>
           </CardContent>
