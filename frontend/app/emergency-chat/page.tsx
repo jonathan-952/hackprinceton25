@@ -117,16 +117,15 @@ export default function EmergencyChatPage() {
             <div className="flex items-center gap-3">
               <Button
                 onClick={handleSaveAsClaim}
-                variant="outline"
                 size="sm"
-                className="border-gray-300 text-gray-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save & File Claim
               </Button>
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-lg bg-gray-900 hover:bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-gray-300 hover:bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 transition-colors"
               >
                 <FileText className="h-4 w-4" />
                 Dashboard
