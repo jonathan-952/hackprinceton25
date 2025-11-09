@@ -317,7 +317,9 @@ async def create_claim(request: dict):
             location=incident_data.get('location', ''),
             damages_description=damage_data.get('description', ''),
             estimated_damage=damage_data.get('severity', 'moderate'),
-            status=ClaimStatus(request.get('status', 'draft'))
+            status=ClaimStatus.OPEN,
+            summary=f"{incident_data.get('type', 'Incident')} at {incident_data.get('location', 'unknown location')} on {incident_data.get('date', 'unknown date')}",
+            confidence=0.85
         )
 
         # Store in database
@@ -636,7 +638,9 @@ async def process_full_claim(
                 location=incident_data.get('location', ''),
                 damages_description=damage_data.get('description', ''),
                 estimated_damage=damage_data.get('severity', 'moderate'),
-                status=ClaimStatus(data.get('status', 'draft'))
+                status=ClaimStatus.OPEN,
+                summary=f"{incident_data.get('type', 'Incident')} at {incident_data.get('location', 'unknown location')} on {incident_data.get('date', 'unknown date')}",
+                confidence=0.85
             )
 
             # Store in database
