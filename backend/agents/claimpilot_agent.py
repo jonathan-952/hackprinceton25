@@ -1,0 +1,383 @@
+"""
+ClaimPilot Agent - Legal Claim Summarizer
+
+Responsibilities:
+- Parse PDF/text documents (police reports, insurance forms)
+- Extract structured claim information
+- Generate natural language summaries
+- Track claim status
+- Coordinate with other agents when needed
+"""
+import uuid
+from datetime import datetime
+from typing import Dict, Optional, List
+from utils.data_models import Claim, ClaimStatus, Party, AgentResponse
+from utils.pdf_parser import pdf_parser
+
+
+class ClaimPilotAgent:
+    """
+    ClaimPilot - Legal Claim Summarizer Agent
+
+    This agent processes insurance documents and creates structured claims.
+    """
+
+    def __init__(self):
+        self.name = "ClaimPilot"
+        self.version = "1.0.0"
+        self.claims_database = {}  # In-memory storage (replace with real DB in production)
+
+    def process_document(
+        self,
+        file_data: Optional[str] = None,
+        file_name: Optional[str] = None,
+        raw_text: Optional[str] = None
+    ) -> AgentResponse:
+        """
+        Process a document and create a structured claim
+
+        Args:
+            file_data: Base64 encoded file content
+            file_name: Name of the file
+            raw_text: Raw text input (alternative to file)
+
+        Returns:
+            AgentResponse with claim data
+        """
+        try:
+            # Extract text from document
+            if raw_text:
+                text = raw_text
+            elif file_data and file_name:
+                text = pdf_parser.parse_document(file_data, file_name)
+            else:
+                return AgentResponse(
+                    agent_name=self.name,
+                    success=False,
+                    data={},
+                    message="No document or text provided"
+                )
+
+            # Extract structured data
+            extracted_data = pdf_parser.extract_structured_data(text)
+
+            # Create claim
+            claim = self._create_claim(text, extracted_data)
+
+            # Store claim
+            self.claims_database[claim.claim_id] = claim
+
+            # Generate summary
+            summary = self._generate_summary(claim)
+
+            return AgentResponse(
+                agent_name=self.name,
+                success=True,
+                data={
+                    "claim": claim.model_dump(),
+                    "summary": summary
+                },
+                message=f"Successfully processed claim {claim.claim_id}",
+                confidence=claim.confidence
+            )
+
+        except Exception as e:
+            return AgentResponse(
+                agent_name=self.name,
+                success=False,
+                data={},
+                message=f"Error processing document: {str(e)}"
+            )
+
+    def _create_claim(self, raw_text: str, extracted_data: Dict) -> Claim:
+        """
+        Create a Claim object from extracted data
+
+        Args:
+            raw_text: Original document text
+            extracted_data: Structured data extracted from document
+
+        Returns:
+            Claim object
+        """
+        # Generate unique claim ID
+        claim_id = f"C-{datetime.now().year}-{str(uuid.uuid4())[:8].upper()}"
+
+        # Extract parties
+        parties = []
+        for party_data in extracted_data.get("parties", []):
+            parties.append(Party(**party_data))
+
+        # Estimate damage if amounts found
+        estimated_damage = None
+        amounts = extracted_data.get("amounts", [])
+        if amounts:
+            # Take the highest amount as estimated damage
+            estimated_damage = f"${max(amounts):,.2f}"
+
+        # Calculate confidence score
+        confidence = self._calculate_confidence(extracted_data, raw_text)
+
+        # Create claim
+        claim = Claim(
+            claim_id=claim_id,
+            incident_type=extracted_data.get("incident_type", "Other"),
+            date=extracted_data.get("date", datetime.now().strftime("%Y-%m-%d")),
+            location=extracted_data.get("location", "Location not specified"),
+            parties_involved=parties,
+            damages_description=extracted_data.get("damages", "No damage description available"),
+            estimated_damage=estimated_damage,
+            confidence=confidence,
+            status=ClaimStatus.PROCESSING,
+            summary="",  # Will be generated
+            raw_text=raw_text
+        )
+
+        return claim
+
+    def _calculate_confidence(self, extracted_data: Dict, raw_text: str) -> float:
+        """
+        Calculate confidence score based on data quality
+
+        Args:
+            extracted_data: Extracted structured data
+            raw_text: Original text
+
+        Returns:
+            Confidence score between 0 and 1
+        """
+        score = 0.0
+        total_checks = 6
+
+        # Check for incident type
+        if extracted_data.get("incident_type") and extracted_data["incident_type"] != "Other":
+            score += 1
+
+        # Check for date
+        if extracted_data.get("date"):
+            score += 1
+
+        # Check for location
+        if extracted_data.get("location") and "not specified" not in extracted_data["location"].lower():
+            score += 1
+
+        # Check for parties
+        if extracted_data.get("parties") and len(extracted_data["parties"]) > 0:
+            score += 1
+
+        # Check for damage description
+        if extracted_data.get("damages") and "not available" not in extracted_data["damages"].lower():
+            score += 1
+
+        # Check for monetary amounts
+        if extracted_data.get("amounts") and len(extracted_data["amounts"]) > 0:
+            score += 1
+
+        return round(score / total_checks, 2)
+
+    def _generate_summary(self, claim: Claim) -> str:
+        """
+        Generate natural language summary of the claim
+
+        Args:
+            claim: Claim object
+
+        Returns:
+            Natural language summary
+        """
+        # Create a conversational summary
+        summary_parts = []
+
+        summary_parts.append(
+            f"A {claim.incident_type.lower()} occurred on {claim.date} "
+            f"at {claim.location}."
+        )
+
+        if claim.parties_involved:
+            party_names = [p.name for p in claim.parties_involved]
+            if len(party_names) == 1:
+                summary_parts.append(f"The incident involved {party_names[0]}.")
+            else:
+                summary_parts.append(
+                    f"The incident involved {', '.join(party_names[:-1])} "
+                    f"and {party_names[-1]}."
+                )
+
+        if claim.damages_description and "not available" not in claim.damages_description.lower():
+            summary_parts.append(claim.damages_description)
+
+        if claim.estimated_damage:
+            summary_parts.append(
+                f"Estimated damage is {claim.estimated_damage}."
+            )
+
+        summary_parts.append(
+            f"This claim has been assigned ID {claim.claim_id} "
+            f"and is currently in {claim.status.value} status."
+        )
+
+        summary = " ".join(summary_parts)
+
+        # Update claim with summary
+        claim.summary = summary
+
+        return summary
+
+    def get_claim(self, claim_id: str) -> Optional[Claim]:
+        """
+        Retrieve a claim by ID
+
+        Args:
+            claim_id: Claim identifier
+
+        Returns:
+            Claim object or None
+        """
+        return self.claims_database.get(claim_id)
+
+    def update_claim_status(self, claim_id: str, status: ClaimStatus) -> AgentResponse:
+        """
+        Update the status of a claim
+
+        Args:
+            claim_id: Claim identifier
+            status: New status
+
+        Returns:
+            AgentResponse
+        """
+        claim = self.get_claim(claim_id)
+        if not claim:
+            return AgentResponse(
+                agent_name=self.name,
+                success=False,
+                data={},
+                message=f"Claim {claim_id} not found"
+            )
+
+        claim.status = status
+        claim.updated_at = datetime.now().isoformat()
+
+        return AgentResponse(
+            agent_name=self.name,
+            success=True,
+            data={"claim": claim.model_dump()},
+            message=f"Claim {claim_id} status updated to {status.value}"
+        )
+
+    def list_claims(self, status: Optional[ClaimStatus] = None) -> List[Claim]:
+        """
+        List all claims, optionally filtered by status
+
+        Args:
+            status: Filter by status (optional)
+
+        Returns:
+            List of claims
+        """
+        claims = list(self.claims_database.values())
+
+        if status:
+            claims = [c for c in claims if c.status == status]
+
+        # Sort by created_at (newest first)
+        claims.sort(key=lambda x: x.created_at, reverse=True)
+
+        return claims
+
+    def analyze_claim(self, claim_id: str) -> AgentResponse:
+        """
+        Provide detailed analysis of a claim
+
+        Args:
+            claim_id: Claim identifier
+
+        Returns:
+            AgentResponse with analysis
+        """
+        claim = self.get_claim(claim_id)
+        if not claim:
+            return AgentResponse(
+                agent_name=self.name,
+                success=False,
+                data={},
+                message=f"Claim {claim_id} not found"
+            )
+
+        # Analyze claim
+        analysis = {
+            "severity": self._assess_severity(claim),
+            "completeness": f"{claim.confidence * 100:.0f}%",
+            "recommended_actions": self._recommend_actions(claim),
+            "missing_information": self._identify_missing_info(claim)
+        }
+
+        return AgentResponse(
+            agent_name=self.name,
+            success=True,
+            data={
+                "claim": claim.model_dump(),
+                "analysis": analysis
+            },
+            message=f"Analysis complete for claim {claim_id}",
+            confidence=claim.confidence
+        )
+
+    def _assess_severity(self, claim: Claim) -> str:
+        """Assess claim severity"""
+        if claim.estimated_damage:
+            amount_str = claim.estimated_damage.replace('$', '').replace(',', '')
+            try:
+                amount = float(amount_str)
+                if amount > 10000:
+                    return "High"
+                elif amount > 3000:
+                    return "Medium"
+                else:
+                    return "Low"
+            except ValueError:
+                pass
+
+        # Default based on incident type
+        high_severity_types = ["Car Accident", "Medical", "Home Damage"]
+        if claim.incident_type in high_severity_types:
+            return "Medium"
+
+        return "Low"
+
+    def _recommend_actions(self, claim: Claim) -> List[str]:
+        """Recommend next actions for the claim"""
+        actions = []
+
+        if claim.confidence < 0.6:
+            actions.append("Review and verify claim information")
+
+        if not claim.estimated_damage:
+            actions.append("Request financial estimation from FinTrack agent")
+
+        if claim.status == ClaimStatus.PROCESSING:
+            actions.append("Continue claim processing")
+
+        if claim.incident_type == "Car Accident":
+            actions.append("Request repair shop recommendations")
+
+        return actions
+
+    def _identify_missing_info(self, claim: Claim) -> List[str]:
+        """Identify missing information in the claim"""
+        missing = []
+
+        if not claim.parties_involved:
+            missing.append("Parties involved")
+
+        if not claim.estimated_damage:
+            missing.append("Estimated damage amount")
+
+        if claim.confidence < 0.7:
+            missing.append("Additional documentation may be needed")
+
+        return missing
+
+
+# Singleton instance
+claimpilot_agent = ClaimPilotAgent()
