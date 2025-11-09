@@ -5,9 +5,12 @@ Multi-agent orchestration system for insurance claim processing
 """
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List
 import base64
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
 
 from orchestrator.coordinator import orchestrator
 from agents.claimpilot_agent import claimpilot_agent
@@ -15,10 +18,22 @@ from agents.fintrack_agent import fintrack_agent
 from agents.shopfinder_agent import shopfinder_agent
 from agents.claim_drafting_agent import claim_drafting_agent
 from agents.compliance_agent import compliance_agent
+from agents.legal_advisor_agent import legal_advisor_agent
+from agents.medical_advisor_agent import medical_advisor_agent
 from utils.data_models import (
     UserMessage, ChatResponse, Claim, ClaimStatus
 )
-from routes.mcp_routes import router as mcp_router
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Gemini
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+else:
+    print("Warning: GEMINI_API_KEY not set. Chat functionality will be limited.")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -27,19 +42,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=["*"],  # In production, specify exact origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Include MCP routes
-app.include_router(mcp_router)
 
 
 # ==================== Main Endpoints ====================
@@ -79,21 +89,143 @@ async def health_check():
 
 # ==================== Chat & Processing Endpoints ====================
 
-@app.post("/api/chat", response_model=ChatResponse)
-async def chat(user_message: UserMessage):
+@app.post("/api/chat")
+async def chat(request: dict):
     """
-    Main chat endpoint - processes user messages and coordinates agents
+    Gemini-powered chat endpoint with claim context awareness
 
     Args:
-        user_message: UserMessage with text, optional file data, and context
+        request: Dict with claim_id, message, and context
 
     Returns:
-        ChatResponse with agent results
+        Chat response with agent actions
     """
     try:
-        response = orchestrator.process_message(user_message)
-        return response
+        claim_id = request.get('claim_id')
+        message = request.get('message', '')
+        context = request.get('context', {})
+
+        # Get claim data
+        claim = None
+        if claim_id:
+            claim = claimpilot_agent.get_claim(claim_id)
+
+        # Build system prompt
+        claim_data = claim.model_dump() if claim else {}
+        agent_outputs = context.get('agent_outputs', {})
+
+        system_prompt = f"""You are ClaimPilot AI, a senior insurance claims specialist with 15 years of experience. You work FOR the claimant and help them maximize their payout.
+
+CRITICAL RULES:
+- NEVER say "I'm an AI" or "I'm a language model" or "I cannot provide legal advice"
+- ALWAYS take a definitive stance - you're an expert, act like one
+- BE CONCISE: Keep responses short (2-4 sentences max). Use bullet points for lists.
+- When asked "should I get a lawyer?" → Give a clear YES or NO with reasoning
+- Be confident, decisive, and advocate for the claimant
+- If unsure, make your best expert recommendation based on the data
+
+ALWAYS ASK THESE IF NOT MENTIONED:
+1. Are you or anyone injured? (Critical for payout)
+2. Is this no-fault or at-fault state? (Affects who pays)
+3. Did you file a police report? (Required in most states)
+
+CLAIM DATA:
+{claim_data}
+
+AGENT OUTPUTS:
+{agent_outputs}
+
+YOUR EXPERTISE:
+- Claims processing & maximization strategies
+- Insurance policy interpretation
+- Damage assessment & negotiation
+- Medical injury evaluation
+- Legal next steps (when to lawyer up, when to settle)
+- Repair shop selection & pricing
+
+RESPONSE STYLE (SHORT & DIRECT):
+✅ "You need a lawyer. With $5K damage + their fault, you could get 30-40% more. Call one today."
+✅ "Your payout: $4,200 after $500 deductible. That's fair - approve it."
+✅ "Go to Princeton AutoFix. $200 cheaper, better reviews, 4.8 stars."
+
+❌ "I'm an AI and cannot provide legal advice. It depends on your situation. You should consult with a professional to understand your options better because..."
+
+When the user asks you to:
+- Update claim: Respond with {{"action": "update_claim", "fields": {{}}}}
+- Run agent: Respond with {{"action": "trigger_agent", "agent": "agent_name"}}
+- Advice: Give DEFINITIVE expert recommendations in 2-4 sentences"""
+
+        # Create chat with Gemini
+        if GEMINI_API_KEY:
+            conversation_history = context.get('conversation_history', [])
+
+            # Build chat history for Gemini
+            history = [
+                {
+                    'role': 'user',
+                    'parts': [{'text': system_prompt}]
+                },
+                {
+                    'role': 'model',
+                    'parts': [{'text': "I understand. I'm ready to assist with this insurance claim. How can I help you today?"}]
+                }
+            ]
+
+            # Add conversation history
+            for msg in conversation_history:
+                history.append({
+                    'role': 'user' if msg['role'] == 'user' else 'model',
+                    'parts': [{'text': msg['content']}]
+                })
+
+            # Send message to Gemini
+            chat = gemini_model.start_chat(history=history)
+            response = chat.send_message(message)
+            response_text = response.text
+
+            # Parse actions from response
+            actions = []
+            import re
+            json_pattern = r'\{[^}]*"action":\s*"([^"]+)"[^}]*\}'
+            matches = re.finditer(json_pattern, response_text)
+
+            for match in matches:
+                try:
+                    import json
+                    action_data = json.loads(match.group(0))
+                    if action_data.get('action') == 'update_claim':
+                        actions.append({
+                            'type': 'update_claim',
+                            'payload': action_data.get('fields', {})
+                        })
+                    elif action_data.get('action') == 'trigger_agent':
+                        actions.append({
+                            'type': 'trigger_agent',
+                            'payload': {'agent': action_data.get('agent')}
+                        })
+                except:
+                    pass
+
+            # Clean response (remove JSON blocks)
+            clean_response = re.sub(json_pattern, '', response_text).strip()
+
+            return {
+                'response': clean_response,
+                'actions': actions,
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            # Fallback to orchestrator if Gemini not configured
+            user_message = UserMessage(message=message, claim_id=claim_id)
+            response = orchestrator.process_message(user_message)
+            return {
+                'response': response.message if hasattr(response, 'message') else str(response),
+                'actions': [],
+                'timestamp': datetime.now().isoformat()
+            }
+
     except Exception as e:
+        print(f"Chat error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -173,6 +305,63 @@ async def process_claim(
 
 # ==================== Claim Management Endpoints ====================
 
+@app.post("/api/claims")
+async def create_claim(request: dict):
+    """
+    Create a new claim from structured data
+
+    Args:
+        request: Claim data dictionary
+
+    Returns:
+        Created claim
+    """
+    try:
+        from utils.data_models import Claim
+        import uuid
+        from datetime import datetime
+
+        # Generate claim ID
+        claim_id = f"C-{uuid.uuid4().hex[:8].upper()}"
+
+        # Extract data from request
+        incident_data = request.get('incident_data', {})
+        vehicle_data = request.get('vehicle_data', {})
+        insurance_data = request.get('insurance_data', {})
+        damage_data = request.get('damage_data', {})
+        police_report = request.get('police_report', {})
+
+        # Create claim object
+        claim = Claim(
+            claim_id=claim_id,
+            incident_type=incident_data.get('type', 'Unknown'),
+            date=incident_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+            location=incident_data.get('location', ''),
+            damages_description=damage_data.get('description', ''),
+            estimated_damage=damage_data.get('severity', 'moderate'),
+            status=ClaimStatus.OPEN,
+            summary=f"{incident_data.get('type', 'Incident')} at {incident_data.get('location', 'unknown location')} on {incident_data.get('date', 'unknown date')}",
+            confidence=0.85
+        )
+
+        # Store in database
+        claimpilot_agent.claims_database[claim_id] = claim
+
+        # Save to Supabase if enabled
+        from utils.supabase_client import save_claim_to_db
+        save_claim_to_db(request)
+
+        return {
+            'success': True,
+            'claim_id': claim_id,
+            'claim': claim.model_dump()
+        }
+
+    except Exception as e:
+        print(f"Error creating claim: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/claims")
 async def list_claims(status: Optional[str] = None):
     """
@@ -239,6 +428,71 @@ async def update_claim_status(claim_id: str, status: str):
         raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/claims/{claim_id}/extract")
+async def extract_claim_data(claim_id: str):
+    """
+    ClaimPilot Core Agent - Extract and analyze claim data
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Extracted and analyzed claim data
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Analyze claim using ClaimPilot agent
+        result = claimpilot_agent.analyze_claim(claim_id)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "ClaimPilot", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error extracting claim data: {str(e)}")
+
+
+@app.get("/api/claims/{claim_id}/messages")
+async def get_claim_messages(claim_id: str):
+    """
+    Get chat messages for a specific claim
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        List of chat messages for this claim
+    """
+    try:
+        # Get conversation history from orchestrator
+        history = orchestrator.get_conversation_history()
+
+        # Filter messages for this claim
+        claim_messages = [
+            msg for msg in history
+            if msg.get('claim_id') == claim_id
+        ]
+
+        return {
+            "claim_id": claim_id,
+            "messages": claim_messages,
+            "count": len(claim_messages)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting messages: {str(e)}")
 
 
 @app.get("/api/claims/{claim_id}/analysis")
@@ -432,35 +686,86 @@ async def get_agent_status(claim_id: str):
 
 @app.post("/api/process-full-claim")
 async def process_full_claim(
-    file: UploadFile = File(...),
-    message: Optional[str] = Form(None)
+    files: Optional[List[UploadFile]] = File(None),
+    claim_data: Optional[str] = Form(None)
 ):
     """
     Process a full claim workflow with all agents
 
     Args:
-        file: Uploaded document
-        message: Optional message
+        files: List of uploaded documents (optional)
+        claim_data: JSON string of claim data (optional)
 
     Returns:
         Complete claim processing results
     """
     try:
-        # Read file content
-        content = await file.read()
-        encoded_content = base64.b64encode(content).decode('utf-8')
+        import json
+        import uuid
 
-        # Create user message
-        user_message = UserMessage(
-            message=message or "Process full claim workflow",
-            file_data=encoded_content,
-            file_name=file.filename
-        )
+        # Parse claim data if provided
+        if claim_data:
+            data = json.loads(claim_data)
 
-        # Process with full workflow
-        response = orchestrator.process_full_claim(user_message)
-        return response
+            # Generate claim ID
+            claim_id = f"C-{uuid.uuid4().hex[:8].upper()}"
 
+            # Extract data from request
+            incident_data = data.get('incident_data', {})
+            vehicle_data = data.get('vehicle_data', {})
+            insurance_data = data.get('insurance_data', {})
+            damage_data = data.get('damage_data', {})
+            police_report = data.get('police_report', {})
+
+            # Create claim object
+            claim = Claim(
+                claim_id=claim_id,
+                incident_type=incident_data.get('type', 'Unknown'),
+                date=incident_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                location=incident_data.get('location', ''),
+                damages_description=damage_data.get('description', ''),
+                estimated_damage=damage_data.get('severity', 'moderate'),
+                status=ClaimStatus.OPEN,
+                summary=f"{incident_data.get('type', 'Incident')} at {incident_data.get('location', 'unknown location')} on {incident_data.get('date', 'unknown date')}",
+                confidence=0.85
+            )
+
+            # Store in database
+            claimpilot_agent.claims_database[claim_id] = claim
+
+            # Save to Supabase if enabled
+            from utils.supabase_client import save_claim_to_db
+            save_claim_to_db(data)
+
+            # TODO: Process uploaded files if any
+            # For now, just return the created claim
+
+            return {
+                'success': True,
+                'claim_id': claim_id,
+                'claim': claim.model_dump()
+            }
+        elif files and len(files) > 0:
+            # Process first file with orchestrator
+            file = files[0]
+            content = await file.read()
+            encoded_content = base64.b64encode(content).decode('utf-8')
+
+            # Create user message
+            user_message = UserMessage(
+                message="Process full claim workflow",
+                file_data=encoded_content,
+                file_name=file.filename
+            )
+
+            # Process with full workflow
+            response = orchestrator.process_full_claim(user_message)
+            return response
+        else:
+            raise HTTPException(status_code=400, detail="Either files or claim_data must be provided")
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON in claim_data: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing claim: {str(e)}")
 
@@ -513,6 +818,304 @@ async def run_compliance_check(claim_id: str):
     orchestrator.update_agent_status(claim_id, "ComplianceCheck", "Complete")
 
     return result.data
+
+
+# ==================== Demo & Orchestration Endpoints ====================
+
+@app.post("/api/claims/{claim_id}/run-all-agents")
+async def run_all_agents(claim_id: str):
+    """
+    🎯 DEMO ENDPOINT: Run all 5 agents on a claim sequentially
+
+    This is the "WOW" endpoint for HackPrinceton demo:
+    1. FinTrack: Estimates damage & payout
+    2. ShopFinder: Finds repair shops
+    3. Claim Drafting: Generates formal document
+    4. Compliance: Validates for submission
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Complete agent outputs + timeline
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Initialize results
+        results = {
+            "claim_id": claim_id,
+            "agents_run": 0,
+            "total_agents": 4,
+            "timeline": [],
+            "outputs": {}
+        }
+
+        import time
+        start_time = time.time()
+
+        # 1. FinTrack Agent - Damage Estimation
+        print(f"🔷 Running FinTrack Agent for {claim_id}...")
+        fintrack_result = fintrack_agent.estimate_damage(claim)
+        if fintrack_result.success:
+            results["outputs"]["fintrack"] = fintrack_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "FinTrack",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 2. ShopFinder Agent - Shop Recommendations
+        print(f"🔷 Running ShopFinder Agent for {claim_id}...")
+        shop_result = shopfinder_agent.find_shops(claim, max_results=3)
+        if shop_result.success:
+            results["outputs"]["shopfinder"] = shop_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "ShopFinder",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 3. Claim Drafting Agent - Generate Document
+        print(f"🔷 Running Claim Drafting Agent for {claim_id}...")
+        draft_result = claim_drafting_agent.generate_draft(
+            claim,
+            financial_data=fintrack_result.data if fintrack_result.success else None
+        )
+        if draft_result.success:
+            results["outputs"]["claim_drafting"] = draft_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "Claim Drafting",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # 4. Compliance Agent - Final Validation
+        print(f"🔷 Running Compliance Agent for {claim_id}...")
+        compliance_result = compliance_agent.validate_claim(
+            claim,
+            draft_html=draft_result.data.get("html_draft") if draft_result.success else None
+        )
+        if compliance_result.success:
+            results["outputs"]["compliance"] = compliance_result.data
+            results["agents_run"] += 1
+            results["timeline"].append({
+                "agent": "Compliance",
+                "status": "completed",
+                "time": f"{time.time() - start_time:.2f}s"
+            })
+
+        # Calculate total processing time
+        total_time = time.time() - start_time
+        results["total_processing_time"] = f"{total_time:.2f}s"
+        results["success"] = results["agents_run"] == results["total_agents"]
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "FinTrack", "Complete")
+        orchestrator.update_agent_status(claim_id, "ShopFinder", "Complete")
+        orchestrator.update_agent_status(claim_id, "ClaimDrafting", "Complete")
+        orchestrator.update_agent_status(claim_id, "ComplianceCheck", "Complete")
+
+        # Generate summary
+        if results["success"]:
+            results["summary"] = (
+                f"✅ Successfully processed claim {claim_id} through all 4 agents in {total_time:.2f}s. "
+                f"Estimated payout: ${results['outputs']['fintrack']['estimate']['payout_after_deductible']:,.2f}. "
+                f"Found {len(results['outputs']['shopfinder']['recommendations']['recommended_shops'])} repair shops. "
+                f"Claim draft generated and compliance {'✅ PASSED' if results['outputs']['compliance']['submission_ready'] else '⚠️  NEEDS REVIEW'}."
+            )
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error running all agents: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error running agents: {str(e)}")
+
+
+@app.post("/api/demo/create-sample-claim")
+async def create_demo_claim():
+    """
+    🎯 DEMO ENDPOINT: Create a realistic sample claim for testing
+
+    Returns:
+        Sample claim with all fields populated
+    """
+    try:
+        import uuid
+        from utils.data_models import Claim, Party, ClaimStatus
+
+        # Create realistic sample claim
+        claim_id = f"C-DEMO-{uuid.uuid4().hex[:8].upper()}"
+
+        sample_claim = Claim(
+            claim_id=claim_id,
+            incident_type="Car Accident",
+            date="2025-01-08",
+            location="123 Nassau St, Princeton, NJ 08542",
+            parties_involved=[
+                Party(
+                    name="John Smith",
+                    role="driver",
+                    contact="(609) 555-1234",
+                    insurance_info="Policy #ABC123456"
+                ),
+                Party(
+                    name="Jane Doe",
+                    role="other driver",
+                    contact="(609) 555-5678",
+                    insurance_info="State Farm Policy #XYZ789"
+                )
+            ],
+            damages_description="Rear-end collision at traffic light on Nassau Street. Significant damage to rear bumper, trunk, and tail lights. Driver-side rear quarter panel also impacted. No airbag deployment. All passengers uninjured.",
+            estimated_damage="$4,500",
+            status=ClaimStatus.OPEN,
+            summary="Rear-end collision at Princeton traffic light with moderate vehicle damage",
+            confidence=0.92,
+            raw_text="On January 8th, 2025, at approximately 3:45 PM, I was stopped at a red light on Nassau Street when the vehicle behind me failed to stop and struck my vehicle from behind..."
+        )
+
+        # Store in database
+        claimpilot_agent.claims_database[claim_id] = sample_claim
+
+        return {
+            "success": True,
+            "claim_id": claim_id,
+            "claim": sample_claim.model_dump(),
+            "message": f"Demo claim {claim_id} created successfully! Use /api/claims/{claim_id}/run-all-agents to see all agents in action."
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating demo claim: {str(e)}")
+
+
+# ==================== Legal & Medical Advisor Endpoints ====================
+
+@app.post("/api/claims/{claim_id}/legal-guidance")
+async def get_legal_guidance(claim_id: str, user_state: str = "NJ"):
+    """
+    Get legal guidance for a claim
+
+    Args:
+        claim_id: Claim identifier
+        user_state: User's state (default NJ)
+
+    Returns:
+        Legal guidance and next steps
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Get legal guidance
+        result = legal_advisor_agent.get_legal_guidance(claim, user_state)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "LegalAdvisor", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting legal guidance: {str(e)}")
+
+
+@app.post("/api/verify-lawyer")
+async def verify_lawyer(lawyer_name: str, state: str = "NJ"):
+    """
+    Verify lawyer credentials
+
+    Args:
+        lawyer_name: Name of lawyer to verify
+        state: State bar to check
+
+    Returns:
+        Verification results
+    """
+    try:
+        result = legal_advisor_agent.verify_lawyer(lawyer_name, state)
+        return result.data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error verifying lawyer: {str(e)}")
+
+
+@app.post("/api/claims/{claim_id}/medical-assessment")
+async def get_medical_assessment(
+    claim_id: str,
+    symptoms: Optional[List[str]] = None
+):
+    """
+    Get medical assessment and recommendations
+
+    Args:
+        claim_id: Claim identifier
+        symptoms: Optional list of symptoms
+
+    Returns:
+        Medical assessment and facility recommendations
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Get medical assessment
+        result = medical_advisor_agent.assess_injuries(claim, symptoms)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "MedicalAdvisor", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting medical assessment: {str(e)}")
+
+
+@app.get("/api/medical-facilities")
+async def find_medical_facilities(
+    facility_type: str = "urgent_care",
+    max_results: int = 3
+):
+    """
+    Find nearby medical facilities
+
+    Args:
+        facility_type: Type of facility (urgent_care, hospital, physical_therapy)
+        max_results: Maximum number to return
+
+    Returns:
+        List of medical facilities
+    """
+    try:
+        result = medical_advisor_agent.find_facilities(facility_type, max_results)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        return result.data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error finding facilities: {str(e)}")
 
 
 # ==================== System Endpoints ====================
