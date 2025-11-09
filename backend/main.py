@@ -408,6 +408,71 @@ async def update_claim_status(claim_id: str, status: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/claims/{claim_id}/extract")
+async def extract_claim_data(claim_id: str):
+    """
+    ClaimPilot Core Agent - Extract and analyze claim data
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        Extracted and analyzed claim data
+    """
+    try:
+        # Get claim
+        claim = claimpilot_agent.get_claim(claim_id)
+        if not claim:
+            raise HTTPException(status_code=404, detail=f"Claim {claim_id} not found")
+
+        # Analyze claim using ClaimPilot agent
+        result = claimpilot_agent.analyze_claim(claim_id)
+
+        if not result.success:
+            raise HTTPException(status_code=400, detail=result.message)
+
+        # Update orchestrator status
+        orchestrator.update_agent_status(claim_id, "ClaimPilot", "Complete")
+
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error extracting claim data: {str(e)}")
+
+
+@app.get("/api/claims/{claim_id}/messages")
+async def get_claim_messages(claim_id: str):
+    """
+    Get chat messages for a specific claim
+
+    Args:
+        claim_id: Claim identifier
+
+    Returns:
+        List of chat messages for this claim
+    """
+    try:
+        # Get conversation history from orchestrator
+        history = orchestrator.get_conversation_history()
+
+        # Filter messages for this claim
+        claim_messages = [
+            msg for msg in history
+            if msg.get('claim_id') == claim_id
+        ]
+
+        return {
+            "claim_id": claim_id,
+            "messages": claim_messages,
+            "count": len(claim_messages)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting messages: {str(e)}")
+
+
 @app.get("/api/claims/{claim_id}/analysis")
 async def analyze_claim(claim_id: str):
     """
