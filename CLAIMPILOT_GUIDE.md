@@ -8,7 +8,7 @@ ClaimPilot is a comprehensive multi-agent AI system designed to simplify and aut
 
 ### Frontend (Next.js)
 - **Landing Page** - Marketing page introducing ClaimPilot
-- **Claims Dashboard** - View and manage ll your claims
+- **Claims Dashboard** - View and manage all your claims
 - **Claim Details Page** - Dual-pane interface with:
   - **Left Panel**: Claim metadata, AI agent progress, live status timeline
   - **Right Panel**: ChatUI for conversational interaction with ClaimPilot
