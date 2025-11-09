@@ -50,3 +50,6 @@ htmlcov/
 *.pid
 *.seed
 *.pid.lock
+#env
+.env/*
+

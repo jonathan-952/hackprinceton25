@@ -9,6 +9,10 @@ export default function LandingPage() {
   const router = useRouter();
   const [showStartModal, setShowStartModal] = useState(false);
 
+
+import Link from 'next/link';
+
+export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
@@ -57,6 +61,12 @@ export default function LandingPage() {
               >
                 Start Your Claim
               </button>
+              <Link
+                href="/dashboard"
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                Start Your Claim
+              </Link>
               <a
                 href="#features"
                 className="text-base font-semibold leading-6 text-gray-900 hover:text-blue-600 transition-colors"
@@ -170,6 +180,12 @@ export default function LandingPage() {
             >
               Start Your Claim
             </button>
+            <Link
+              href="/dashboard"
+              className="mt-8 inline-block rounded-xl bg-white px-8 py-4 text-base font-semibold text-blue-600 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+            >
+              Start Your Claim
+            </Link>
           </div>
         </div>
       </main>
